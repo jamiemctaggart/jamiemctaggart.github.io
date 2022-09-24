@@ -20,18 +20,17 @@
 <body>
     <main class="wrapper">
         <nav class="navigation">
-            <br>
             <section class="container">
-                <a class="navigation-title">Rebellion Probe Tracker</h3>
-                    <a class="button button-outline float-right" href="#" onclick="refreshSystems()" data-popover="">Reset Systems</a>
-                    <a class="button button-outline float-right" href="#" onclick="undo()" data-popover="">Undo</a>
-                    <!--<ul class="navigation-list float-right">
+                <a class="navigation-title">Probe Tracker</h3>
+                <ul class="navigation-list float-right">
                     <li class="navigation-item float-right">
-                        <a class="navigation-link" href="#" data-popover="">Help</a>
+                        <a class="navigation-link" href="#" onclick="refreshSystems()" data-popover="">Reset Systems</a>
                     </li>
-                </ul>-->
+                    <li class="navigation-item float-right">
+                        <a class="navigation-link" href="#" onclick="undo()" data-popover="">Undo</a>
+                    </li>
+                </ul>
             </section>
-            <hr>
         </nav>
         <section class="container">
             <dl id="SystemList">
@@ -58,20 +57,14 @@ function refreshSystems(fullRefresh = true) {
 }
 
 function undo() {
+    if (probeHistory.length == 0) return;
     var i = probeHistory[probeHistory.length - 1];
-    console.log(i);
     probeHistory.pop();
     shownListItems[i] = true;
     refreshSystems(false);//Don't do a full refresh
 }
 
 function removeSystem(systemI) {
-    // HTML side
-    //var systemList = document.getElementById("SystemList");//List of systems being displayed
-    //var systems = document.getElementById(systemI);//Finds the specific system to remove
-    //systemList.removeChild(systems);//Remove in html
-    
-    // Backend
     shownListItems[systemI] = false;
     var system = fullList[systemI];
     probeHistory.push(systemI);//Adds the removed systems to history.
