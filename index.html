@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimal-ui">
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+
+    <!-- CSS Reset -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+
+    <!-- Milligram CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+
+</head>
+
+<body>
+    <main class="wrapper">
+        <nav class="navigation">
+            <section class="container">
+                <a class="navigation-title">Rebellion Probe Tracker</h3>
+                    <a class="navigation-link float-right" href="#" onclick="refreshSystems()" data-popover="">Reset Systems</a>
+                    <!--<ul class="navigation-list float-right">
+                    <li class="navigation-item float-right">
+                        <a class="navigation-link" href="#" data-popover="">Help</a>
+                    </li>
+                </ul>-->
+            </section>
+            <hr>
+        </nav>
+        <section class="container">
+            <dl id="SystemList">
+<script>
+var target = document.getElementById("SystemList");
+const fullList = ["Alderaan","Bespin","Bothawui","CatoNeimoidia","Corellia","Dagobah","Dantooine","Dathomir","Endor","Feluica","Geonosis","Hoth","Ilum","Kashyyk","Kessel","Malastare","Mandalore","Mon Calamari","Mustafar","Mygeeto","Naboo","NalHutta","OrdMantell","Rodia","Ryloth","Saleucami","Sullust","Tatooine","Toydaria","Utapau","Yavin"];
+var listItems = fullList;
+
+refreshSystems();
+
+function refreshSystems() {
+    //listItems.forEach(system => {
+     //   target.innerHTML += '<dt id="' + system + '"><p class="float-left">' + system + '</p><button class="button float-right" onclick="removeSystem(' + system + ')">Probe System</button><br><hr></dt>';
+    //});
+    target.innerHTML = "";
+    listItemss = fullList;
+    for (var i = 0; i < listItems.length; i++) {
+        target.innerHTML += '<dt id="' + i + '"><p class="float-left">' + listItems[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe System</button><br><hr></dt>';
+    }
+}
+
+function removeSystem(systemI) {
+    var systemList = document.getElementById("SystemList");
+    var systems = document.getElementById(systemI);
+    systemList.removeChild(systems);
+}
+</script>
+                <!--
+                <dt>
+                    <p class="float-left">System 1</p>
+                    <button class="button float-right">Probe System</button>
+                </dt><br><hr>
+                <dt>
+                    <p class="float-left">System 1</p>
+                    <button class="button float-right">Probe System</button>
+                </dt>-->
+            </dl>
+        </section>
+    </main>
+</body>

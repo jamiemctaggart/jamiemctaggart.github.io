@@ -1,2 +1,2 @@
-# jamiemctaggart.github.io
-Simple star wars rebellion probe tracker
+# rebellion-probe-tracker
+A probe tracker for the board game star wars rebellion
