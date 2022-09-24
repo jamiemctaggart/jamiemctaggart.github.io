@@ -19,7 +19,8 @@
         <nav class="navigation">
             <section class="container">
                 <a class="navigation-title">Rebellion Probe Tracker</h3>
-                    <a class="navigation-link float-right" href="#" onclick="refreshSystems()" data-popover="">Reset Systems</a>
+                    <a class="button button-outline float-right" href="#" onclick="refreshSystems()" data-popover="">Reset Systems</a>
+                    <a class="button button-outline float-right" href="#" onclick="undo()" data-popover="">Undo</a>
                     <!--<ul class="navigation-list float-right">
                     <li class="navigation-item float-right">
                         <a class="navigation-link" href="#" data-popover="">Help</a>
@@ -33,22 +34,44 @@
 <script>
 var target = document.getElementById("SystemList");
 const fullList = ["Alderaan","Bespin","Bothawui","Cato Neimoidia","Corellia","Dagobah","Dantooine","Dathomir","Endor","Feluica","Geonosis","Hoth","Ilum","Kashyyk","Kessel","Malastare","Mandalore","Mon Calamari","Mustafar","Mygeeto","Naboo","Nal Hutta","Ord Mantell","Rodia","Ryloth","Saleucami","Sullust","Tatooine","Toydaria","Utapau","Yavin"];
-var listItems = fullList;
+var shownListItems = [];
+var probeHistory = [];
 
-refreshSystems();
 
-function refreshSystems() {
+refreshSystems(true);
+
+function refreshSystems(fullRefresh = true) {
     target.innerHTML = "";
-    listItemss = fullList;
-    for (var i = 0; i < listItems.length; i++) {
-        target.innerHTML += '<dt id="' + i + '"><p class="float-left">' + listItems[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe System</button><br><hr></dt>';
+    if (fullRefresh) {
+        shownListItems = [];
+        probeHistory = [];
+        for (var i = 0; i < fullList.length; i++) 
+            shownListItems.push(true);
     }
+    for (var i = 0; i < fullList.length; i++)
+        if (shownListItems[i]) 
+            target.innerHTML += '<dt id="' + i + '"><p class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe System</button><br><hr></dt>';
+}
+
+function undo() {
+    var i = probeHistory[probeHistory.length - 1];
+    console.log(i);
+    probeHistory.pop();
+    shownListItems[i] = true;
+    refreshSystems(false);//Don't do a full refresh
 }
 
 function removeSystem(systemI) {
-    var systemList = document.getElementById("SystemList");
-    var systems = document.getElementById(systemI);
-    systemList.removeChild(systems);
+    // HTML side
+    //var systemList = document.getElementById("SystemList");//List of systems being displayed
+    //var systems = document.getElementById(systemI);//Finds the specific system to remove
+    //systemList.removeChild(systems);//Remove in html
+    
+    // Backend
+    shownListItems[systemI] = false;
+    var system = fullList[systemI];
+    probeHistory.push(systemI);//Adds the removed systems to history.
+    refreshSystems(false);
 }
 </script>
                 <!--
