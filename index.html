@@ -32,15 +32,12 @@
             <dl id="SystemList">
 <script>
 var target = document.getElementById("SystemList");
-const fullList = ["Alderaan","Bespin","Bothawui","CatoNeimoidia","Corellia","Dagobah","Dantooine","Dathomir","Endor","Feluica","Geonosis","Hoth","Ilum","Kashyyk","Kessel","Malastare","Mandalore","Mon Calamari","Mustafar","Mygeeto","Naboo","NalHutta","OrdMantell","Rodia","Ryloth","Saleucami","Sullust","Tatooine","Toydaria","Utapau","Yavin"];
+const fullList = ["Alderaan","Bespin","Bothawui","Cato Neimoidia","Corellia","Dagobah","Dantooine","Dathomir","Endor","Feluica","Geonosis","Hoth","Ilum","Kashyyk","Kessel","Malastare","Mandalore","Mon Calamari","Mustafar","Mygeeto","Naboo","Nal Hutta","Ord Mantell","Rodia","Ryloth","Saleucami","Sullust","Tatooine","Toydaria","Utapau","Yavin"];
 var listItems = fullList;
 
 refreshSystems();
 
 function refreshSystems() {
-    //listItems.forEach(system => {
-     //   target.innerHTML += '<dt id="' + system + '"><p class="float-left">' + system + '</p><button class="button float-right" onclick="removeSystem(' + system + ')">Probe System</button><br><hr></dt>';
-    //});
     target.innerHTML = "";
     listItemss = fullList;
     for (var i = 0; i < listItems.length; i++) {
