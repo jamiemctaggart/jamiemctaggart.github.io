@@ -1,13 +1,18 @@
 body {
-    background-color: black;
-    color: white;
+  background-color: black;
+  color: white;
+}
+
+@media screen and (prefers-color-scheme: light) {
+  body {
+    background-color: white;
+    color: black;
   }
-  @media screen and (prefers-color-scheme: light) {
-    body {
-      background-color: white;
-      color: black;
-    }
+
+  .navigation {
+    background:white;
   }
+}
 
 #navItem {
     line-height: 56px;
