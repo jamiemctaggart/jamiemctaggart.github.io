@@ -15,6 +15,14 @@
     <!-- Personal stylesheet-->
     <link rel="stylesheet" href="stylesheet.css">
 
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="manifest" href="icons/site.webmanifest">
+    <link rel="mask-icon" href="icons/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
 </head>
 
 <body>
@@ -36,40 +44,40 @@
         <section class="container">
             <dl id="SystemList">
                 <script>
-// Finds the target to add list items
-var target = document.getElementById("SystemList");
-// Generates the full list of systems as a list of strings
-const fullList = ["Alderaan", "Bespin", "Bothawui", "Cato Neimoidia", "Corellia", "Dagobah", "Dantooine", "Dathomir", "Endor", "Feluica", "Geonosis", "Hoth", "Ilum", "Kashyyk", "Kessel", "Malastare", "Mandalore", "Mon Calamari", "Mustafar", "Mygeeto", "Naboo", "Nal Hutta", "Ord Mantell", "Rodia", "Ryloth", "Saleucami", "Sullust", "Tatooine", "Toydaria", "Utapau", "Yavin"];
-var shownListItems = [];
-var probeHistory = [];
-refreshSystems(true);
+                    // Finds the target to add list items
+                    var target = document.getElementById("SystemList");
+                    // Generates the full list of systems as a list of strings
+                    const fullList = ["Alderaan", "Bespin", "Bothawui", "Cato Neimoidia", "Corellia", "Dagobah", "Dantooine", "Dathomir", "Endor", "Feluica", "Geonosis", "Hoth", "Ilum", "Kashyyk", "Kessel", "Malastare", "Mandalore", "Mon Calamari", "Mustafar", "Mygeeto", "Naboo", "Nal Hutta", "Ord Mantell", "Rodia", "Ryloth", "Saleucami", "Sullust", "Tatooine", "Toydaria", "Utapau", "Yavin"];
+                    var shownListItems = [];
+                    var probeHistory = [];
+                    refreshSystems(true);
 
-function refreshSystems(fullRefresh = true) {
-    target.innerHTML = "";
-    if (fullRefresh) {
-        shownListItems = [];
-        probeHistory = [];
-        for (var i = 0; i < fullList.length; i++)
-            shownListItems.push(true);
-    }
-    for (var i = 0; i < fullList.length; i++)
-        if (shownListItems[i])
-            target.innerHTML += '<dt id="' + i + '"><p class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe System</button><br><hr></dt>';
-}
+                    function refreshSystems(fullRefresh = true) {
+                        target.innerHTML = "";
+                        if (fullRefresh) {
+                            shownListItems = [];
+                            probeHistory = [];
+                            for (var i = 0; i < fullList.length; i++)
+                                shownListItems.push(true);
+                        }
+                        for (var i = 0; i < fullList.length; i++)
+                            if (shownListItems[i])
+                                target.innerHTML += '<dt id="' + i + '"><p class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe System</button><br><hr></dt>';
+                    }
 
-function undo() {
-    if (probeHistory.length == 0) return;
-    var i = probeHistory[probeHistory.length - 1];
-    probeHistory.pop();
-    shownListItems[i] = true;
-    refreshSystems(false);//Don't do a full refresh
-}
+                    function undo() {
+                        if (probeHistory.length == 0) return;
+                        var i = probeHistory[probeHistory.length - 1];
+                        probeHistory.pop();
+                        shownListItems[i] = true;
+                        refreshSystems(false);//Don't do a full refresh
+                    }
 
-function removeSystem(systemI) {
-    shownListItems[systemI] = false;//Sets this to false to stop it from being displayed
-    probeHistory.push(systemI);//Adds the removed systems to history.
-    refreshSystems(false);
-}
+                    function removeSystem(systemI) {
+                        shownListItems[systemI] = false;//Sets this to false to stop it from being displayed
+                        probeHistory.push(systemI);//Adds the removed systems to history.
+                        refreshSystems(false);
+                    }
                 </script>
             </dl>
         </section>
