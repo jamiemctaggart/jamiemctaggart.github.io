@@ -22,25 +22,26 @@
         <nav class="navigation">
             <section class="container">
                 <a class="navigation-title">Probe Tracker</h3>
-                <ul class="navigation-list float-right">
-                    <li class="navigation-item float-right">
-                        <a class="navigation-link" href="#" onclick="refreshSystems()" data-popover="">Reset Systems</a>
-                    </li>
-                    <li class="navigation-item float-right">
-                        <a class="navigation-link" href="#" onclick="undo()" data-popover="">Undo</a>
-                    </li>
-                </ul>
+                    <ul class="navigation-list float-right">
+                        <li class="navigation-item float-right">
+                            <a class="navigation-link" href="#" onclick="refreshSystems()" data-popover="">Reset
+                                Systems</a>
+                        </li>
+                        <li class="navigation-item float-right">
+                            <a class="navigation-link" href="#" onclick="undo()" data-popover="">Undo</a>
+                        </li>
+                    </ul>
             </section>
         </nav>
         <section class="container">
             <dl id="SystemList">
-<script>
+                <script>
+// Finds the target to add list items
 var target = document.getElementById("SystemList");
-const fullList = ["Alderaan","Bespin","Bothawui","Cato Neimoidia","Corellia","Dagobah","Dantooine","Dathomir","Endor","Feluica","Geonosis","Hoth","Ilum","Kashyyk","Kessel","Malastare","Mandalore","Mon Calamari","Mustafar","Mygeeto","Naboo","Nal Hutta","Ord Mantell","Rodia","Ryloth","Saleucami","Sullust","Tatooine","Toydaria","Utapau","Yavin"];
+// Generates the full list of systems as a list of strings
+const fullList = ["Alderaan", "Bespin", "Bothawui", "Cato Neimoidia", "Corellia", "Dagobah", "Dantooine", "Dathomir", "Endor", "Feluica", "Geonosis", "Hoth", "Ilum", "Kashyyk", "Kessel", "Malastare", "Mandalore", "Mon Calamari", "Mustafar", "Mygeeto", "Naboo", "Nal Hutta", "Ord Mantell", "Rodia", "Ryloth", "Saleucami", "Sullust", "Tatooine", "Toydaria", "Utapau", "Yavin"];
 var shownListItems = [];
 var probeHistory = [];
-
-
 refreshSystems(true);
 
 function refreshSystems(fullRefresh = true) {
@@ -48,11 +49,11 @@ function refreshSystems(fullRefresh = true) {
     if (fullRefresh) {
         shownListItems = [];
         probeHistory = [];
-        for (var i = 0; i < fullList.length; i++) 
+        for (var i = 0; i < fullList.length; i++)
             shownListItems.push(true);
     }
     for (var i = 0; i < fullList.length; i++)
-        if (shownListItems[i]) 
+        if (shownListItems[i])
             target.innerHTML += '<dt id="' + i + '"><p class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe System</button><br><hr></dt>';
 }
 
@@ -65,21 +66,11 @@ function undo() {
 }
 
 function removeSystem(systemI) {
-    shownListItems[systemI] = false;
-    var system = fullList[systemI];
+    shownListItems[systemI] = false;//Sets this to false to stop it from being displayed
     probeHistory.push(systemI);//Adds the removed systems to history.
     refreshSystems(false);
 }
-</script>
-                <!--
-                <dt>
-                    <p class="float-left">System 1</p>
-                    <button class="button float-right">Probe System</button>
-                </dt><br><hr>
-                <dt>
-                    <p class="float-left">System 1</p>
-                    <button class="button float-right">Probe System</button>
-                </dt>-->
+                </script>
             </dl>
         </section>
     </main>

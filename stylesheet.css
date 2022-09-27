@@ -3,16 +3,11 @@ body {
   color: white;
 }
 
-@media screen and (prefers-color-scheme: light) {
-  body {
-    background-color: white;
-    color: black;
-  }
-
-  .navigation {
-    background:white;
-  }
+nav {
+  background-color: black;
+  color: white;
 }
+
 
 #navItem {
     line-height: 56px;
@@ -75,7 +70,6 @@ body {
  }
 }
 .navigation {
- background:#000000;
  border-bottom:.1rem solid #9b4dca;
  display:block;
  height:5.2rem;
@@ -141,4 +135,21 @@ body {
  top:0;
  width:5.2rem;
  z-index:2
+}
+
+
+@media screen and (prefers-color-scheme: light) {
+  body {
+    background-color: white;
+    color: black;
+  }
+
+  nav {
+    background-color: #f4f5f6;
+    color: black;
+  }
+
+  .navigation {
+    background: #f4f5f6;
+  }
 }
