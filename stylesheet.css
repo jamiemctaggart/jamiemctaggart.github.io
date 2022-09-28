@@ -101,6 +101,9 @@ nav {
  margin-left:2.5rem;
  position:relative
 }
+.navigation-item {
+  color:#9b4dca;
+}
 .navigation .img {
  fill:#9b4dca;
  height:2rem;
