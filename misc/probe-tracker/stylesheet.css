@@ -8,10 +8,21 @@ nav {
   color: white;
 }
 
+#minimap {
+  float: left;
+  margin: 0 15px 0 0;
+}
 
 #navItem {
     line-height: 56px;
 }
+
+#imgBox {
+  padding-top: 0px;
+  padding-bottom: 0px;
+  margin-bottom: 0px;
+}
+
 .wrapper {
  display:block;
  overflow:hidden;
@@ -29,14 +40,17 @@ nav {
  background-color:#f4f5f6;
  padding-top:1rem
 }
+
 @media(min-width:40rem) {
  .header {
   padding-top:5rem
  }
 }
+
 .header+section {
  border-top:0
 }
+
 .header .container {
  border-top:0;
  padding-bottom:7.5rem;
@@ -157,6 +171,11 @@ button {
   margin-right: 20px;
 }
 
+@media screen and (max-width: 460px) {
+  .navigation-title {
+    display: none !important;
+  }
+}
 
 
 @media screen and (prefers-color-scheme: light) {
