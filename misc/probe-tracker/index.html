@@ -55,7 +55,7 @@
             <section class="container">
                 <a class="navigation-title hidden-mobile" href="#">Probe Tracker</a>
                 <ul class="navigation-list float-right" style="margin-right: 0px;">
-                    <li class="navigation-item navigation-link float-right" href="#" onclick="changeSort()" data-popover="" id="sortText">Region Sort</li>
+                    <li class="navigation-item navigation-link float-right" href="#" onclick="changeSort(1)" data-popover="" id="sortText">Region Sort</li>
                     <li class="navigation-item navigation-link float-right" href="#" onclick="refreshSystems()" data-popover="">Reset
                         Systems</li>
                     <li class="navigation-item navigation-link float-right" href="#" onclick="undo()" data-popover="">Undo</li>
@@ -66,6 +66,9 @@
             <dl id="SystemList">
             </dl>
             <dl id="SubjugatedSystemList">
+            </dl>
+            <dl id="Additional Options">
+                <dt><button class="button float-centre" onclick="ConquerSort()">Conquer Sort</button><button class="button float-centre" onclick="RiskSort()">Risk Sort</button></dt>
             </dl>
         </section>
         <script src="js/systems.js"></script>

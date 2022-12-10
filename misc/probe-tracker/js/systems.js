@@ -13,25 +13,38 @@ const fullListRegions = [7,8,2,7,7,
 6,4,2,4,4,1,8,
 6,5,2,6,3,3,1,
 5,3,2,5,1]
+fullListRisk = [2,1,1,1,1,2,3,3,3,1,1,3,3,1,2,2,1,2,1,1,1,2,1,1,3,1,1,3,1,1,3]// 3 is highest risk 1 is lowest
+fullListConquerVal = [1,2,2,2,3,1,1,1,1,1,3,1,1,1,1,1,1,3,2,4,1,1,3,1,1,2,3,1,2,4,1] // 4 is super priority 1 is lowest
 var shownListItems = [];
 var probeHistory = [];
-var regionSort = false;
+//var regionSort = false;
+var sortType = 0; // default
 refreshSystems(true);
 
-function changeSort() {
-    regionSort = !regionSort;//Swap sorting system
+function changeSort(newType) {
+    //regionSort = !regionSort;//Swap sorting system
+    // If sets to 1 and already 1 change to 0 instead
+    if (sortType == newType) {
+        sortType = 0;
+    }
+    else {
+        sortType = newType;
+    }
     refresh();
 }
 
 function refresh(){
     target.innerHTML = "";
     subjugatedTarget.innerHTML = '<dt><h3 style="margin:auto; text-align:center;">Subjugated Systems</h3></dt>';
-    if (regionSort) {
+    if (sortType == 1) {
         sortedRefresh(false);//If here region sort is enabled
         sort.innerText = "Alphabet Sort"
-    } else {
+    } else if (sortType == 0) {
         alphabetRefresh();// Not full refresh
         sort.innerText = "Region Sort"
+    } else if (sortType == 2) {
+        // conquer sort type
+        conquerRefresh();
     }
     subjugatedRefresh();
 }
@@ -63,6 +76,26 @@ function sortedRefresh(fullRefresh = true) {
             if (fullListRegions[i] == region && shownListItems[i] == 0)
                 addSystem(i);
     }
+}
+
+function conquerRefresh() {
+    for (var conquerVal = 4; conquerVal > 0; conquerVal--) {
+        target.innerHTML += '<dt><h3 width="100%">Conquer Values: ' + conquerVal + '</h3></dt>';
+        for (var i = 0; i < fullList.length; i++) {
+            if (fullListConquerVal[i] == conquerVal && shownListItems[i] == 0)
+                addSystem(i);
+        }
+    }
+}
+
+function ConquerSort() {
+    changeSort(2);
+
+}
+
+function RiskSort() {
+    changeSort(3)
+
 }
 
 function addSystem(i, subjugated = false) {
