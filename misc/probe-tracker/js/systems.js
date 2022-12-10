@@ -45,6 +45,8 @@ function refresh(){
     } else if (sortType == 2) {
         // conquer sort type
         conquerRefresh();
+    } else if (sortType == 3) {
+        riskRefresh();
     }
     subjugatedRefresh();
 }
@@ -83,6 +85,16 @@ function conquerRefresh() {
         target.innerHTML += '<dt><h3 width="100%">Conquer Values: ' + conquerVal + '</h3></dt>';
         for (var i = 0; i < fullList.length; i++) {
             if (fullListConquerVal[i] == conquerVal && shownListItems[i] == 0)
+                addSystem(i);
+        }
+    }
+}
+
+function riskRefresh() {
+    for (var riskVal = 3; riskVal > 0; riskVal--) {
+        target.innerHTML += '<dt><h3 width="100%">Risk Values: ' + riskVal + '</h3></dt>';
+        for (var i = 0; i < fullList.length; i++) {
+            if (fullListRisk[i] == riskVal && shownListItems[i] == 0)
                 addSystem(i);
         }
     }
