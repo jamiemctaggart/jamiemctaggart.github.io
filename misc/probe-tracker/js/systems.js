@@ -13,7 +13,7 @@ const fullListRegions = [7,8,2,7,7,
 6,4,2,4,4,1,8,
 6,5,2,6,3,3,1,
 5,3,2,5,1]
-fullListRisk = [2,1,1,1,1,2,3,3,3,1,1,3,3,1,2,2,1,2,1,1,1,2,1,1,3,1,1,3,1,1,3]// 3 is highest risk 1 is lowest
+fullListRisk = [2,1,1,1,1,2,3,3,3,1,1,3,3,1,2,2,1,2,1,1,1,2,1,2,3,1,1,3,1,1,3]// 3 is highest risk 1 is lowest
 fullListConquerVal = [1,2,2,2,3,1,1,1,1,1,3,1,1,1,1,1,1,3,2,4,1,1,3,1,1,2,3,1,2,4,1] // 4 is super priority 1 is lowest
 var shownListItems = [];
 var probeHistory = [];
@@ -119,6 +119,9 @@ function RiskSort() {
 }
 
 function addSystem(i, subjugated = false) {
+    // First check if additional style is required
+    
+    // Now add the planet to either the subjugated list or the regular list
     if (subjugated)
         subjugatedTarget.innerHTML += '<dt id="' + i + '"><p class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe</button><button class="button float-right" onclick="toggleSubjugate(' + i + ')">Unsubjugate</button></dt>';
     else
