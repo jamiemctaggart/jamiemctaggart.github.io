@@ -120,12 +120,17 @@ function RiskSort() {
 
 function addSystem(i, subjugated = false) {
     // First check if additional style is required
+    style = '';
+    if (fullListRisk[i] == 3)
+        style = 'style="color:red;"';
+    else if (fullListRisk[i] == 2)
+        style = 'style="color:yellow;"';
     
     // Now add the planet to either the subjugated list or the regular list
     if (subjugated)
-        subjugatedTarget.innerHTML += '<dt id="' + i + '"><p class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe</button><button class="button float-right" onclick="toggleSubjugate(' + i + ')">Unsubjugate</button></dt>';
+        subjugatedTarget.innerHTML += '<dt id="' + i + '"><p ' + style + ' class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe</button><button class="button float-right" onclick="toggleSubjugate(' + i + ')">Unsubjugate</button></dt>';
     else
-        target.innerHTML += '<dt id="' + i + '"><p class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe</button><button class="button float-right" onclick="toggleSubjugate(' + i + ')">Subjugate</button></dt>';
+        target.innerHTML += '<dt id="' + i + '"><p ' + style + ' class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe</button><button class="button float-right" onclick="toggleSubjugate(' + i + ')">Subjugate</button></dt>';
 }
 
 function fullRefreshList() {
