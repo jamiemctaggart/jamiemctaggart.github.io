@@ -96,10 +96,14 @@ function conquerRefresh() {
 
 function riskRefresh() {
     for (var riskVal = 3; riskVal > 0; riskVal--) {
-        target.innerHTML += '<dt style="padding-bottom: 1rem;"><h3 style="margin:auto; text-align:center;">Risk Values: ' + riskVal + '</h3></dt>';
-        for (var i = 0; i < fullList.length; i++) {
+        toAdd = [] //Start with an empty array of systems to add for the category
+        for (var i = 0; i < fullList.length; i++) // Add to list if the correct risk value and currently shown
             if (fullListRisk[i] == riskVal && shownListItems[i] == 0)
-                addSystem(i);
+                toAdd.push(i)
+        if (toAdd.length != 0) {
+            target.innerHTML += '<dt style="padding-bottom: 1rem;"><h3 style="margin:auto; text-align:center;">Risk Value ' + riskVal + ' (' + toAdd.length + ')</h3></dt>';
+            for (var c = 0; c < toAdd.length; c++)
+                addSystem(toAdd[c]);
         }
     }
 }
