@@ -82,7 +82,7 @@ function sortedRefresh(fullRefresh = true) {
 
 function conquerRefresh() {
     for (var conquerVal = 4; conquerVal > 0; conquerVal--) {
-        target.innerHTML += '<dt><h3 width="100%">Conquer Values: ' + conquerVal + '</h3></dt>';
+        target.innerHTML += '<dt style="padding-bottom: 1rem;"><h3 style="margin:auto; text-align:center;">Conquer Values: ' + conquerVal + '</h3></dt>';
         for (var i = 0; i < fullList.length; i++) {
             if (fullListConquerVal[i] == conquerVal && shownListItems[i] == 0)
                 addSystem(i);
@@ -92,7 +92,7 @@ function conquerRefresh() {
 
 function riskRefresh() {
     for (var riskVal = 3; riskVal > 0; riskVal--) {
-        target.innerHTML += '<dt><h3 width="100%">Risk Values: ' + riskVal + '</h3></dt>';
+        target.innerHTML += '<dt style="padding-bottom: 1rem;"><h3 style="margin:auto; text-align:center;">Risk Values: ' + riskVal + '</h3></dt>';
         for (var i = 0; i < fullList.length; i++) {
             if (fullListRisk[i] == riskVal && shownListItems[i] == 0)
                 addSystem(i);
