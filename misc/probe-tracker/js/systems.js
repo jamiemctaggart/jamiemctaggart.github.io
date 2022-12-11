@@ -36,17 +36,19 @@ function changeSort(newType) {
 function refresh(){
     target.innerHTML = "";
     subjugatedTarget.innerHTML = '<dt><h3 style="margin:auto; text-align:center;">Subjugated Systems</h3></dt>';
-    if (sortType == 1) {
-        sortedRefresh(false);//If here region sort is enabled
-        sort.innerText = "Alphabet Sort"
-    } else if (sortType == 0) {
+    if (sortType == 0) {
         alphabetRefresh();// Not full refresh
+        sort.innerText = "Alphabet Sort"
+    } else if (sortType == 1) {
+        sortedRefresh(false);//If here region sort is enabled
         sort.innerText = "Region Sort"
     } else if (sortType == 2) {
         // conquer sort type
         conquerRefresh();
+        sort.innerText = "Conquer Sort"
     } else if (sortType == 3) {
         riskRefresh();
+        sort.innerText = "Risk Sort"
     }
     subjugatedRefresh();
 }
@@ -106,16 +108,6 @@ function riskRefresh() {
                 addSystem(toAdd[c]);
         }
     }
-}
-
-function ConquerSort() {
-    changeSort(2);
-
-}
-
-function RiskSort() {
-    changeSort(3)
-
 }
 
 function addSystem(i, subjugated = false) {
