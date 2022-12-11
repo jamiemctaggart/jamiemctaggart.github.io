@@ -82,10 +82,14 @@ function sortedRefresh(fullRefresh = true) {
 
 function conquerRefresh() {
     for (var conquerVal = 4; conquerVal > 0; conquerVal--) {
-        target.innerHTML += '<dt style="padding-bottom: 1rem;"><h3 style="margin:auto; text-align:center;">Conquer Values: ' + conquerVal + '</h3></dt>';
-        for (var i = 0; i < fullList.length; i++) {
+        toAdd = [] //Start with an empty array of systems to add for the category
+        for (var i = 0; i < fullList.length; i++) // Add to list if the correct conquer value and currently shown
             if (fullListConquerVal[i] == conquerVal && shownListItems[i] == 0)
-                addSystem(i);
+                toAdd.push(i)
+        if (toAdd.length != 0) {
+            target.innerHTML += '<dt style="padding-bottom: 1rem;"><h3 style="margin:auto; text-align:center;">Conquer Value ' + conquerVal + ' (' + toAdd.length + ')</h3></dt>';
+            for (var c = 0; c < toAdd.length; c++)
+                addSystem(toAdd[c]);
         }
     }
 }
