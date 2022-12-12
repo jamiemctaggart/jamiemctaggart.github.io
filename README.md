@@ -2,6 +2,11 @@
 
 A star wars [Rebellion Probe Tracker](https://jamiemctaggart.com/misc/probe-tracker/) web app that allows for easy empire play on the board game.
 
+# Big Data Notes
+
+Some [notes](https://jamiemctaggart.com/misc/big-data-notes/) I've taken for the big data module in markdown and converted
+
+
 
 ## Roadmap
 

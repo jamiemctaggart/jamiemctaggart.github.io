@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Primary Meta Tags -->
+    <title>Big Data Notes</title>
+    <meta name="title" content="Big Data Notes">
+    <meta name="description" content="Notes for my big data module">
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Personal stylesheet-->
+    <link rel="stylesheet" href="stylesheet.css">
+</head>
+<h1 id="nosql-">NoSQL:</h1>
+<ul>
+    <li>different from sql as it doesn&#39;t use a relational data model so is flexible</li>
+    <li>doesn&#39;t require database schema
+        efficiency</li>
+    <li>All data in oe table so JOINs are faster</li>
+    <li>Horizontally scalable, meaning you can just use another shard instead of buying additional hardware</li>
+</ul>
+<h2 id="types-of-nosql">Types of noSQL</h2>
+<ul>
+    <li>Key value store: <ul>
+            <li>Specifically built for high-performance requirements and most common.</li>
+            <li>Uses key values with pointters to store data.<ul>
+                    <li>Document-Based Store:</li>
+                </ul>
+            </li>
+            <li>All data stored in one table</li>
+            <li>Similar to key-value store but has encoding such as xml<ul>
+                    <li>Column-Based Store</li>
+                </ul>
+            </li>
+            <li>Stores information in columns instead of rows</li>
+            <li>They are grouped into families</li>
+            <li>Limitless column nesting data model</li>
+            <li>Very fast for searches<ul>
+                    <li>Graph-Based Store</li>
+                </ul>
+            </li>
+            <li>Used for graphs (duh)</li>
+            <li>Uses relationships and nodes, data is the information</li>
+            <li>relationship is formed between the nodes</li>
+        </ul>
+    </li>
+</ul>
+<h1 id="rdmbs">RDMBS</h1>
+<ul>
+    <li>Is a relational database management system to interact with a relational database</li>
+    <li>Unlike a DBMS, Uses normalizatio, primary and foreign keys, integrity checks and ACID properties to ensure data
+        is reliable.</li>
+</ul>
+<h1 id="the-3-v-s-of-data-science">The 3 V&#39;s of data science</h1>
+<ol>
+    <li>Volume<ul>
+            <li>This is how much data is stored and is obviously key when talking about &#39;big&#39; data</li>
+        </ul>
+    </li>
+    <li>Velocity<ul>
+            <li>Velocity is the <strong>growth</strong> of the data, and the importance of it.</li>
+            <li>It measures how fast the data is coming in.</li>
+        </ul>
+    </li>
+    <li>Variety<ul>
+            <li>Things such as video, text and pdf are examples of non-traditional forms of data that need to be dealt
+                with in big data</li>
+        </ul>
+    </li>
+</ol>
+<h1 id="polyglot-persistance">Polyglot persistance</h1>
+<ul>
+    <li>Refers to the value in using multiple data storage technologies for different storage needs.</li>
+    <li>No one solution fits all</li>
+    <li>Different tech for different kinds of data</li>
+</ul>
+<h1 id="lambda-architecture">Lambda Architecture</h1>
+<ul>
+    <li>Used to handle massive quantities of data by using both batch and stream-processing methods<h3 id="3-layers-">3
+            layers:</h3>
+    </li>
+    <li>Batch Layer<ul>
+            <li>Precomputes results with distributed processing system that can handle very large quantities of data.
+            </li>
+            <li>Perfect accuracy is required.</li>
+            <li>Fixes any errors by recomputing based on the complete data set then updates the existing view, allowing
+                it to reach perfect accuracy with reversible functions.</li>
+            <li>Output is stored in read-only database with updates changing precomputed views.</li>
+            <li>This is what <strong>Hadoop</strong> is and is the leading batch processor.</li>
+        </ul>
+    </li>
+    <li>Speed layer<ul>
+            <li>This layer processes data streams in real time without completeness</li>
+            <li>Sacrifices throughput as it aims to minimize latency by using real-time views into the data.</li>
+            <li>The speed layer is used to fill the &quot;gap&quot; caused by the batch layers lag in providing views
+                based on the most recent data.</li>
+            <li>Not as accureate or complete as the ones eventually produced by the batch layer, but available far
+                quicker.</li>
+        </ul>
+    </li>
+    <li>Serving layer<ul>
+            <li>Output from 2 other layers are stored in the serving layer</li>
+            <li>Responds to queries by returning pre-computed views from processed data.</li>
+            <li><strong>Cassandra</strong> is a dedicated store used in the serving layer.</li>
+        </ul>
+    </li>
+</ul>
+<h1 id="hadoop">Hadoop</h1>
+<ul>
+    <li>written in Java</li>
+    <li>Uses large cluster of hardware to maintain big data.</li>
+    <li>Works on MapReduce algorithm made by Google.</li>
+    <li>Hadoop MapReduce is a programming model for processing big data sets with a parralel distrobuted algorithm.</li>
+    <li>One challenge to MapReduce is the sequential multi-step process it take sto run a job. This makes MapReduce jobs
+        slower because each step requires a disk read and write.</li>
+</ul>
+<h1 id="hadoop-mapreduce-phases">Hadoop MapReduce Phases</h1>
+<p><img src="https://www.section.io/engineering-education/understanding-map-reduce-in-hadoop/example-of-mapreduce.png">
+</p>
+<ul>
+    <li>Mapping Phase <ul>
+            <li>Two steps in this phase, splitting and mapping.</li>
+            <li>Data is split into equal units called chunks (input splits) in the splitting step.</li>
+            <li>Hadoop consists of a RecordReader that uses TextInputFormat to transform input splits into key-value
+                pairs</li>
+            <li>Key-value pairs are used as inputs in the mapping step.</li>
+            <li>Only data format that a mapper can read or understand.</li>
+            <li>Mapper processes the key-value pairs and produces an output of the same form (key-value pairs).</li>
+        </ul>
+    </li>
+    <li>Shuffling phase:<ul>
+            <li>This phase removes the duplicate values and groups value.</li>
+            <li>Different values with similar keys are grouped. the output of this phase will be keys and values, just
+                like in the mapping phase.</li>
+        </ul>
+    </li>
+    <li>Reducer phase:<ul>
+            <li>Outputs of the shuffling phase is used as the input.</li>
+            <li>Processes this input more to reduce the intermediate values into smaller values.</li>
+            <li>Gives a summary of the entire datasets</li>
+        </ul>
+    </li>
+</ul>
+<h1 id="hadoop-distrobuted-file-system-hdfs-">Hadoop Distrobuted File System(HDFS)</h1>
+<ul>
+    <li>Fault-tolerant file system.</li>
+    <li>designed to be deployed on low-cost, commodity hardware.</li>
+    <li>Provides high throughput data access to application data.</li>
+</ul>
+<h1 id="cassandra">Cassandra</h1>
+<h2 id="cluster">Cluster</h2>
+<ul>
+    <li>Cassandra DB is distrobuted over multiple machines that work together.</li>
+    <li>Each node is a replica to handle failures </li>
+    <li>nodes are in a cluster ring format</li>
+</ul>
+<p><img src="https://www.baeldung.com/wp-content/uploads/2021/08/apache-cassandra-diagrams-01-scaled.jpeg"></p>
+<h2 id="keyspace">Keyspace</h2>
+<ul>
+    <li>Replication factor is the number of machines the information is stored on</li>
+    <li>Replica placement strategy is simply the strategy to place replicas in the &#39;ring&#39; shown above.
+        Strategies include<ul>
+            <li>Simple strategy (rack aware strategy)</li>
+            <li>old network topology strategy (rack aware strategy)</li>
+            <li>network topology strategy (datacenter-shared strategy)</li>
+        </ul>
+    </li>
+    <li>Column families, keyspace is a container for a list of one or more column families. A column family is a
+        collection of rows with ordered columns. </li>
+</ul>
+<h1 id="apache-spark">Apache Spark</h1>
+<ul>
+    <li>Spark was created to address the limitations present in MapReduce by doing processing in-memory avoiding steps
+        and reuing data across parallel operations.</li>
+    <li>Only one step is needed with spark where the data is read into memory, operations are done, and the results are
+        written back making it much faster.</li>
+    <li>Spark also reuses data by using in-memory cache to speed up machine learning algorithms that repeatedly call a
+        function on the same dataset. </li>
+    <li>This all makes spark multiple times faster than MapReduce especially when doing machine learning and interactive
+        analytics.</li>
+</ul>
+<h1 id="resilient-distributed-dataset-rdd-">Resilient Distributed Dataset (RDD)</h1>
+<ul>
+    <li>Every spark application has an abstraction of RDD, which is a collection of elements partitioned across nodes of
+        the cluster that can be opereated on in parallel. </li>
+    <li>They are created by starting with a file in the Hadoop file system</li>
+    <li>RDDs automatically recover from node failures.</li>
+</ul>
+<h1 id="erlang">Erlang</h1>
+<ul>
+    <li>Used for building concurrent software.</li>
+    <li>Pros of use:<ul>
+            <li>It is a simple language to use</li>
+            <li>It scales very well as once the deployment and integration is set up, scaling erlange nodes and spawning
+                new processess on different machines becomes easy. </li>
+            <li>When a program fails it is able to re-span any failed process automatically making it a safe language to
+                use for concurrency.</li>
+        </ul>
+    </li>
+    <li>Cons:<ul>
+            <li>It has a convoluted setup process</li>
+            <li>Is a dynamically typed language so it&#39;s possible for problems to not be found at compile time and
+                instead will be found during running of the code.</li>
+        </ul>
+    </li>
+</ul>
+<h1 id="local-clustering-coefficient">Local clustering coefficient</h1>
+<ul>
+    <li>The local clustering coefficient of a vertexx node is how close its neighbours are to being a complete graph
+    </li>
+</ul>
+<p><img src="https://media.geeksforgeeks.org/wp-content/uploads/clustering-coefficient-in-graph-theory-1.png"></p>
+<h1 id="cap-theorem">CAP Theorem</h1>
+<p><img src="https://www.scylladb.com/wp-content/uploads/cap-theorem-diagram-e1647300692559.png"></p>
+<ul>
+    <li>Also named <strong>Brewer&#39;s theorem</strong> states that any distributed data store can provide only two of
+        the following three quarantees, but never all 3.</li>
+</ul>
+<p>Three guarantees (only 2 at once):</p>
+<ul>
+    <li><strong>Consistency</strong> - Every read recieves the most recent write or an error</li>
+    <li><strong>Availability</strong> - Every request recieves a non error response, without the guarantee that it
+        contains the most recent write.</li>
+    <li><strong>Partition tolerance</strong> - The system continues to work despite messages being dropped or delayed by
+        network nodes.</li>
+</ul>
+<h1 id="acid-vs-base-model-of-db-functionality-">ACID vs BASE model of db functionality.</h1>
+<h2 id="acid-details-">Acid details:</h2>
+<p><img src="https://s7280.pcdn.co/wp-content/uploads/2020/04/acid-data.png"></p>
+<p>Base Stands for</p>
+<ul>
+    <li><strong>Basically Available</strong> - Rather than enforcing immediate consistency, BASE-modelled NoSQL
+        databases will ensure availability of data by spreading and replication it across the nodes of the database
+        cluster.</li>
+    <li><strong>Soft State</strong> - Due to the lack of immediate consistency data values may change over time, the
+        BASE model breaks off with the idea that a database must enforce its own consistency, leaving that to individual
+        developers.</li>
+    <li><strong>Eventually Consistent</strong> - the fact that BASE does not enforce immediate consistency does not mean
+        that it never achieves it. but until it does it&#39;s still possible to read data.</li>
+</ul>
+<p>Base differences:</p>
+<ul>
+    <li>ACID-compliant databases are better when consistency, predicatbility, and reliability are required.</li>
+    <li>When growth is the highest priority, BASE is a good option as it&#39;s easier to scale it up and gives more
+        flexibility. </li>
+    <li>BASE requires developers who are experienced and know how to deal with it&#39;s limitations of enforcing
+        consistency on their own.</li>
+</ul>
+<h1 id="scala-basics">Scala Basics</h1>
+<p>Means <strong>Sca</strong>lable <strong>La</strong>nguage as it&#39;s entire purpose is to scale easily.</p>
+<ul>
+    <li>it&#39;s a blend of oop and functional programming language with static typing.</li>
+    <li>Brings in the best of both paradigms</li>
+    <li>High level abstraction and conciseness of functional languages</li>
+    <li>Flexibility, encapsulation and modularity from object oriented languages</li>
+    <li>Compiles to JVM so can use java libraries and types</li>
+    <li>order of magnitude less lines than java</li>
+    <li>statically typed
+        Functional components:</li>
+    <li>Operations map inputs to outputs instead of re-write so no side-effects</li>
+    <li>no i=i+1 in functional language</li>
+    <li>no global state, no loops, no destructive state</li>
+    <li>Significantly easier concurrency<ul>
+            <li>The lack of side effects means no race conditions or deadlocks</li>
+            <li>parallel programs are easier to write</li>
+            <li>Very easily scaleable</li>
+            <li>Share-nothing approch is ideal for distributed systems</li>
+        </ul>
+    </li>
+    <li>Many big data frameworks have binding for Scala so easier to write than in Java or Python</li>
+</ul>
+<h2 id="basic-scala-syntax">Basic Scala syntax</h2>
+<ul>
+    <li>val - immutable variable</li>
+    <li>var - mutable variable</li>
+    <li>val \<variable>:\<type> = \<value>
+    </li>
+    <li>Data types Int, Byte, Short, Long, Char, Float, Double, Boolean, String</li>
+</ul>
+<p>List info:</p>
+<ul>
+    <li>Lists are immutable and have a recursive structure</li>
+    <li>can &#39;add&#39; to a list by doing x :: xs where x is the first element and xs is the current list.</li>
+    <li>Functions for list<ul>
+            <li>head - first element</li>
+            <li>tail - everython but the first element</li>
+            <li>isEmpty</li>
+            <li>::: - list concatination</li>
+            <li>length</li>
+            <li>init, last</li>
+            <li>reverse</li>
+            <li>drop, take, splitAt</li>
+        </ul>
+    </li>
+</ul>
+<p>Array info:</p>
+<ul>
+    <li>Similar to lists but they are <strong>mutable</strong></li>
+    <li>Not recursive.</li>
+    <li>Defined similar to lists</li>
+    <li>val <array_name> = new Array[\<type>][\<dim>]</li>
+    <li>Can convert between the two with elements, toArray, toList</li>
+</ul>
+<p>Input output in scala:</p>
+<ul>
+    <li>println(\<string>)</li>
+    <li>Source.fromFile(\<file>).getLines</li>
+</ul>
+<p>Classes in Scala</p>
+<ul>
+    <li>Object created using new</li>
+</ul>
+<p>class MyClass {}</p>
+<p>val x = new MyClass</p>
