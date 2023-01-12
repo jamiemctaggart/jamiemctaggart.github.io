@@ -41,6 +41,11 @@ nav {
  padding-top:1rem
 }
 
+.active {
+  background-color: #606c76;
+  border-color: #606c76;
+}
+
 @media(min-width:40rem) {
  .header {
   padding-top:5rem

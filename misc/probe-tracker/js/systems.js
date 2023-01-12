@@ -50,7 +50,16 @@ function refresh(){
         riskRefresh();
         sort.innerText = "Risk Sort"
     }
+    highlightActiveSort(sortType);
     subjugatedRefresh();
+}
+
+function highlightActiveSort(sortType) {
+    var sortButtons = document.getElementsByClassName("sortButton");
+    for (var i = 0; i < sortButtons.length; i++) {
+        sortButtons[i].classList.remove("active");
+    }
+    sortButtons[sortType].classList.add("active");
 }
 
 function alphabetRefresh(){
