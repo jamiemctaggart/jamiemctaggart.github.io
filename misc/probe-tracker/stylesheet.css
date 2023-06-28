@@ -54,12 +54,13 @@ nav {
     height: 50px;
     top: 0;
     left: 0;
-    background-color: blue;
+    background-color: rgba(70, 130, 180, 0.7); /* Light blue with transparency */;
     margin: auto;
     color: white;
     text-align: center;
     padding: 10px;
     z-index: 9999; /* Make sure it sits on top of other content */
+    border-radius: 15px 15px 15px 15px; /* Round the bottom edges */
 }
 
 .notification .closebtn {
