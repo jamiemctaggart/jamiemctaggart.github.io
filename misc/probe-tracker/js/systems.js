@@ -15,11 +15,21 @@ const fullListRegions = [7,8,2,7,7,
 5,3,2,5,1]
 fullListRisk = [2,1,1,1,1,2,3,3,3,1,1,3,3,1,2,2,1,2,1,1,1,2,1,2,3,1,1,3,1,1,3]// 3 is highest risk 1 is lowest
 fullListConquerVal = [1,2,2,2,3,1,1,1,1,1,3,1,1,1,1,1,1,3,2,4,1,1,3,1,1,2,3,1,2,4,1] // 4 is super priority 1 is lowest
-var shownListItems = [];
+//var shownListItems = [];
+
+// Read the cookie when the page is first opened
+const cookieValue = document.cookie
+  .split('; ')
+  .find(row => row.startsWith('shownListItems='))
+  ?.split('=')[1];
+
+var shownListItems = cookieValue ? JSON.parse(cookieValue) : /* default value */ [];
+
 var probeHistory = [];
 //var regionSort = false;
 var sortType = 0; // default
-refreshSystems(true);
+// if length is 0 then it is the first time the page has been opened so set all to 0 (not probed) with full refresh
+refreshSystems(shownListItems.length == 0);
 
 function changeSort(newType) {
     //regionSort = !regionSort;//Swap sorting system
@@ -31,6 +41,14 @@ function changeSort(newType) {
         sortType = newType;
     }
     refresh();
+}
+
+function saveCookie() {
+    // Convert the integer array to a JSON string
+    const shownListItemsString = JSON.stringify(shownListItems);
+
+    // Write the shownListItemsString to a cookie
+    document.cookie = `shownListItems=${shownListItemsString}`;
 }
 
 function refresh(){
@@ -159,6 +177,7 @@ function undo() {
 function removeSystem(systemI) {
     shownListItems[systemI] = 2;//Sets this to 2 to stop it from being displayed
     probeHistory.push(systemI);//Adds the removed systems to history.
+    saveCookie();
     refresh();
 }
 
@@ -167,5 +186,6 @@ function toggleSubjugate(systemI) {
         shownListItems[systemI] = 1;
     else
         shownListItems[systemI] = 0;
+    saveCookie();
     refresh();
 }
