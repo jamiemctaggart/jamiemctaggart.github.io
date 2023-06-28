@@ -25,7 +25,6 @@ const cookieValue = document.cookie
 
 var shownListItems = cookieValue ? JSON.parse(cookieValue) : /* default value */ [];
 
-showNotification();
 
 var probeHistory = [];
 //var regionSort = false;
@@ -33,6 +32,10 @@ var sortType = 0; // default
 // if length is 0 then it is the first time the page has been opened so set all to 0 (not probed) with full refresh
 refreshSystems(shownListItems.length == 0);
 
+const allZeros = shownListItems.every((val, i, arr) => val === 0);
+if (shownListItems.length != 0 && !allZeros) {
+    showNotification();
+}
 function showNotification() {
     const notification = document.getElementById("notification");
     notification.style.display = "block";
@@ -62,6 +65,10 @@ function saveCookie() {
 
     // Write the shownListItemsString to a cookie
     document.cookie = `shownListItems=${shownListItemsString}`;
+}
+
+function deleteCookie() {
+    document.cookie = "shownListItems=; expires=Thu, 01 Jan 1970 00:00:00 UTC"; 
 }
 
 function refresh(){
@@ -167,9 +174,11 @@ function addSystem(i, subjugated = false) {
 
 function fullRefreshList() {
     shownListItems = [];
+    closeNotification();
     probeHistory = [];
     for (var i = 0; i < fullList.length; i++)
         shownListItems.push(0);
+    saveCookie();
 }
 
 
