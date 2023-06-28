@@ -25,11 +25,24 @@ const cookieValue = document.cookie
 
 var shownListItems = cookieValue ? JSON.parse(cookieValue) : /* default value */ [];
 
+showNotification();
+
 var probeHistory = [];
 //var regionSort = false;
 var sortType = 0; // default
 // if length is 0 then it is the first time the page has been opened so set all to 0 (not probed) with full refresh
 refreshSystems(shownListItems.length == 0);
+
+function showNotification() {
+    const notification = document.getElementById("notification");
+    notification.style.display = "block";
+    notification.innerHTML = "Loaded saved list. <span class='closebtn' onclick='closeNotification()'>x</span>";
+}
+
+function closeNotification() {
+    const notification = document.getElementById("notification");
+    notification.style.display = "none";
+}
 
 function changeSort(newType) {
     //regionSort = !regionSort;//Swap sorting system

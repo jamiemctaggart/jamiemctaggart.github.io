@@ -1,6 +1,7 @@
 body {
   background-color: black;
   color: white;
+  overflow: visible;
 }
 
 nav {
@@ -44,6 +45,32 @@ nav {
 .active {
   background-color: #606c76;
   border-color: #606c76;
+}
+
+.notification {
+    /*position: fixed;*/
+    display: none; /* Hidden by default */
+    width: 100%;
+    height: 50px;
+    top: 0;
+    left: 0;
+    background-color: blue;
+    margin: auto;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    z-index: 9999; /* Make sure it sits on top of other content */
+}
+
+.notification .closebtn {
+    margin-left: 15px;
+    color: white;
+    font-weight: bold;
+    float: right;
+    font-size: 22px;
+    line-height: 20px;
+    cursor: pointer;
+    transition: 0.3s;
 }
 
 @media(min-width:40rem) {
