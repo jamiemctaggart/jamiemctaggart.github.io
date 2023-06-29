@@ -111,6 +111,7 @@ function deleteCookie() {
 function refresh(){
     target.innerHTML = "";
     subjugatedTarget.innerHTML = "";
+    document.getElementById('searchInput').value = '';
     //subjugatedTarget.innerHTML = '<dt><h3 style="margin:auto; text-align:center;">Subjugated Systems</h3></dt>';
     if (sortType == 0) {
         alphabetRefresh();// Not full refresh
