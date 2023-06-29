@@ -24,6 +24,30 @@ nav {
   margin-bottom: 0px;
 }
 
+.search-container {
+    display: flex;
+    width: 100%;
+    align-items: center; /* this will align items vertically */
+}
+
+#searchInput {
+    flex-grow: 1;
+    color: white;
+}
+
+#clearButton {
+    display: flex; /* set button as flex container */
+    justify-content: center; /* center items horizontally */
+    align-items: center; /* center items vertically */
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 2rem;
+    padding: 10px;
+    color: white;
+}
+
+
 .wrapper {
  display:block;
  overflow:hidden;
@@ -222,6 +246,11 @@ p {
   }
 
   nav {
+    background-color: #f4f5f6;
+    color: black;
+  }
+
+  input {
     background-color: #f4f5f6;
     color: black;
   }

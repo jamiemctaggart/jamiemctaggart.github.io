@@ -36,6 +36,43 @@ const allZeros = shownListItems.every((val, i, arr) => val === 0);
 if (shownListItems.length != 0 && !allZeros) {
     showNotification();
 }
+
+function searchFunction() {
+    // Get input element
+    let input = document.getElementById('searchInput');
+    // Convert input to uppercase for case-insensitive searching
+    let filter = input.value.toUpperCase();
+
+    // Get system list elements
+    let systemList = document.getElementById('SystemList');
+    let subjugatedSystemList = document.getElementById('SubjugatedSystemList');
+
+    // Combine both lists into an array
+    let lists = [systemList, subjugatedSystemList];
+
+    // Loop through both lists
+    for (let list of lists) {
+        // Get all systems in the list
+        let systems = list.getElementsByTagName('dt');
+
+        // Loop through all system items, and hide those who don't match the search query
+        for (let i = 0; i < systems.length; i++) {
+            let txtValue = systems[i].textContent || systems[i].innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                systems[i].style.display = "";
+            } else {
+                systems[i].style.display = "none";
+            }
+        }
+    }
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    searchFunction(); // Call search function to reset the results after clearing the input
+    refresh();
+}
+
 function showNotification() {
     const notification = document.getElementById("notification");
     notification.style.display = "block";
@@ -73,7 +110,8 @@ function deleteCookie() {
 
 function refresh(){
     target.innerHTML = "";
-    subjugatedTarget.innerHTML = '<dt><h3 style="margin:auto; text-align:center;">Subjugated Systems</h3></dt>';
+    subjugatedTarget.innerHTML = "";
+    //subjugatedTarget.innerHTML = '<dt><h3 style="margin:auto; text-align:center;">Subjugated Systems</h3></dt>';
     if (sortType == 0) {
         alphabetRefresh();// Not full refresh
         sort.innerText = "Alphabet Sort"

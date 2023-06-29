@@ -72,8 +72,13 @@
                 </dt>
             </dl>
             <div id="notification" class="notification"></div>
+            <div class="search-container">
+                <input type="text" id="searchInput" onkeyup="searchFunction()" placeholder="Search for systems.." title="Type in a system">
+                <button id="clearButton" onclick="clearSearch()">X</button>
+            </div>
             <dl id="SystemList">
             </dl>
+            <h3 style="margin:auto; text-align:center;">Subjugated Systems</h3>
             <dl id="SubjugatedSystemList">
             </dl>
         </section>
