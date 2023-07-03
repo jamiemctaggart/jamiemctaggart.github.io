@@ -1,12 +1,14 @@
-# Rebellion Probe Tracker
+# Misc websites
+
+a couple websites I have made
+
+## Rebellion Probe Tracker
 
 A star wars [Rebellion Probe Tracker](https://jamiemctaggart.com/misc/probe-tracker/) web app that allows for easy empire play on the board game.
 
-## Roadmap
+## Countdown to Oppenheimer
 
-- Use cookies to save systems so a refresh of the page doesn't clear the list
-
-- Add css animations to removing items from a list
+[Countdown to Oppenheimer](https://jamiemctaggart.com/misc/time-to-oppenheimer/) A simple website that tracks time to oppenheimer
 
 ## Authors
 
