@@ -48,6 +48,18 @@
     <meta name="theme-color" content="#ffffff">
 </head>
 <body>
+<script>
+// Define dataLayer and the gtag function.
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+
+// Default ad_storage to 'denied' as a placeholder
+// Determine actual values based on your own requirements
+gtag('consent', 'default', {
+  'ad_storage': 'denied'
+});
+</script>
+
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3NEPKSMJG5"></script>
 <script>
@@ -57,6 +69,14 @@
 
   gtag('config', 'G-3NEPKSMJG5');
 </script>
+<script>
+  function consentGranted() {
+    gtag('consent', 'update', {
+      'ad_storage': 'granted'
+    });
+  }
+</script>
+
     <main class="wrapper">
         <nav class="navigation">
             <section class="container">
@@ -90,6 +110,12 @@
             </dl>
         </section>
         <script src="js/systems.js"></script>
+        <div id="cookie-banner" class="cookie-banner">
+            <p>We use cookies to save progress on the tracker and record anonymised site views <a href="/cookie-policy">Learn more</a></p>
+            <button id="cookie-accept" class="cookie-button" onclick="consentGranted()">Accept</button>
+            <button id="cookie-decline" class="cookie-button">Decline</button>
+        </div>
+
     </main>
 </body>
 

@@ -250,3 +250,47 @@ function toggleSubjugate(systemI) {
     saveCookie();
     refresh();
 }
+
+window.onload = function() {
+    var acceptButton = document.getElementById('cookie-accept');
+    var declineButton = document.getElementById('cookie-decline');
+    var cookieBanner = document.getElementById('cookie-banner');
+
+    // Check if user has already made a choice
+    if (!getCookie('cookie_consent')) {
+        cookieBanner.style.display = 'block'; // Show banner if no choice made
+    }
+
+    acceptButton.onclick = function() {
+        setCookie('cookie_consent', 'accepted', 365);
+        cookieBanner.style.display = 'none';
+        // Insert your analytics script here if the user has accepted cookies
+    }
+
+    declineButton.onclick = function() {
+        setCookie('cookie_consent', 'declined', 365);
+        cookieBanner.style.display = 'none';
+        // Do not insert analytics script if the user has declined cookies
+    }
+}
+
+function setCookie(name, value, days) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days*24*60*60*1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0;i < ca.length;i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
+}

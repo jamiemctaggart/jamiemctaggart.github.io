@@ -47,6 +47,24 @@ nav {
     color: white;
 }
 
+.cookie-banner {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none; /* Hidden by default */
+    background-color: black;
+}
+
+.cookie-button {
+    margin-left: 10px;
+    /*padding: 10px 20px;*/
+    cursor: pointer;
+    border: none;
+}
 
 .wrapper {
  display:block;
