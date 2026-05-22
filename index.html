@@ -61,7 +61,7 @@
 
         /* ── Layout ── */
         .container {
-            max-width: 860px;
+            max-width: 1100px;
             margin: 0 auto;
             padding: 0 2rem;
         }
@@ -166,8 +166,16 @@
 
         .card-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 1.2rem;
+        }
+
+        @media (max-width: 780px) {
+            .card-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 500px) {
+            .card-grid { grid-template-columns: 1fr; }
         }
 
         .card {
@@ -282,6 +290,15 @@
             <div class="container">
                 <p class="section-label">Projects</p>
                 <div class="card-grid">
+                    <a class="card" href="/misc/dual-life-dashboard/" target="_blank" rel="noopener">
+                        <span class="card-tag">Dashboard &mdash; Live Data</span>
+                        <h3>Dual-Life Dashboard</h3>
+                        <p>A split-screen dashboard showing live local time, weather, and sunrise/sunset for Dundee and
+                            Hangzhou side by side. Pulls live conditions from Open-Meteo with no API key &mdash; built
+                            for long-distance.</p>
+                        <span class="card-arrow">Open &rarr;</span>
+                    </a>
+
                     <a class="card" href="/misc/vision-sandbox/" target="_blank" rel="noopener">
                         <span class="card-tag">WebGL &mdash; Three.js</span>
                         <h3>Industrial Vision Sandbox</h3>
@@ -303,7 +320,9 @@
                     <a class="card" href="/misc/tdp-estimator/" target="_blank" rel="noopener">
                         <span class="card-tag">Calculator &mdash; Linux Gaming</span>
                         <h3>Handheld TDP &amp; Battery Estimator</h3>
-                        <p>Visual TDP calculator for SteamOS and Bazzite handhelds. Select your device, game profile, and wattage to see estimated FPS, battery life, and the exact point of diminishing returns on the performance curve.</p>
+                        <p>Visual TDP calculator for SteamOS and Bazzite handhelds. Select your device, game profile,
+                            and wattage to see estimated FPS, battery life, and the exact point of diminishing returns
+                            on the performance curve.</p>
                         <span class="card-arrow">Open &rarr;</span>
                     </a>
 
@@ -336,7 +355,7 @@
                     <a class="card" href="/weng/" target="_blank" rel="noopener">
                         <span class="card-tag">Web App</span>
                         <h3>Countdown</h3>
-                        <p>A personal countdown page tracking two upcoming dates, with a warm and minimal design
+                        <p>A personal countdown page tracking important dates, with a warm and minimal design
                             optimised for mobile.</p>
                         <span class="card-arrow">Open &rarr;</span>
                     </a>

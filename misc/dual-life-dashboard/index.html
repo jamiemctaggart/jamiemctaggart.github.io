@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual-Life Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --d-accent: #7db8e8;
+            --h-accent: #e8a46a;
+            --text:     #f0ece8;
+            --dim:      rgba(240, 236, 232, 0.45);
+            --faint:    rgba(240, 236, 232, 0.18);
+        }
+
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            background: #09090f;
+            color: var(--text);
+        }
+
+        /* ── Layout ─────────────────────────────────────── */
+        .dashboard {
+            display: flex;
+            height: 100vh;
+        }
+
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3.5rem 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-dundee {
+            background: radial-gradient(ellipse at 35% 15%, #0e2444 0%, #080f20 55%, #050810 100%);
+        }
+
+        .panel-hangzhou {
+            background: radial-gradient(ellipse at 65% 15%, #2a0e20 0%, #180a18 55%, #0c0510 100%);
+        }
+
+        /* ── Stars ───────────────────────────────────────── */
+        .star-canvas {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        /* ── Day glow ────────────────────────────────────── */
+        .day-glow {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 45%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 2.5s ease;
+        }
+
+        .panel-dundee .day-glow {
+            background: radial-gradient(ellipse at 50% -10%, rgba(125, 184, 232, 0.18) 0%, transparent 65%);
+        }
+
+        .panel-hangzhou .day-glow {
+            background: radial-gradient(ellipse at 50% -10%, rgba(232, 164, 106, 0.18) 0%, transparent 65%);
+        }
+
+        .day-glow.visible { opacity: 1; }
+
+        /* ── Panel content ───────────────────────────────── */
+        .panel-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .city-label {
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 0.78rem;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--dim);
+            margin-bottom: 2.2rem;
+        }
+
+        .weather-icon {
+            width: 58px;
+            height: 58px;
+            margin-bottom: 1.4rem;
+            opacity: 0.9;
+        }
+
+        .time {
+            font-weight: 300;
+            font-size: clamp(4.8rem, 10.8vw, 9rem);
+            letter-spacing: -0.03em;
+            line-height: 1;
+            margin-bottom: 0.55rem;
+        }
+
+        .panel-dundee .time { color: #d6eaf8; }
+        .panel-hangzhou .time { color: #f8ead6; }
+
+        .date-line {
+            font-weight: 300;
+            font-style: italic;
+            font-size: 1.14rem;
+            color: var(--dim);
+            letter-spacing: 0.04em;
+            margin-bottom: 2.4rem;
+        }
+
+        .weather-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.9rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .temperature {
+            font-size: 2.52rem;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+
+        .panel-dundee .temperature { color: var(--d-accent); }
+        .panel-hangzhou .temperature { color: var(--h-accent); }
+
+        .condition {
+            font-size: 1.2rem;
+            font-style: italic;
+            font-weight: 300;
+            color: var(--dim);
+        }
+
+        .wind-line {
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 0.84rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--faint);
+            margin-bottom: 2.4rem;
+        }
+
+        .sun-row {
+            display: flex;
+            gap: 2.8rem;
+        }
+
+        .sun-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.28rem;
+        }
+
+        .sun-label {
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 0.72rem;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--faint);
+        }
+
+        .sun-value {
+            font-weight: 300;
+            font-size: 1.14rem;
+            color: var(--dim);
+        }
+
+        /* ── Divider ─────────────────────────────────────── */
+        .divider {
+            width: 1px;
+            height: 100vh;
+            flex-shrink: 0;
+            background: linear-gradient(
+                to bottom,
+                transparent 0%,
+                rgba(240, 236, 232, 0.06) 15%,
+                rgba(240, 236, 232, 0.14) 50%,
+                rgba(240, 236, 232, 0.06) 85%,
+                transparent 100%
+            );
+            position: relative;
+            z-index: 10;
+        }
+
+        .divider-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            background: #09090f;
+            padding: 1.6rem 1.4rem;
+        }
+
+        .heart {
+            width: 14px;
+            height: 14px;
+            color: rgba(240, 236, 232, 0.28);
+            animation: heartbeat 3.5s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1);    opacity: 0.28; }
+            45%       { transform: scale(1.15); opacity: 0.55; }
+            55%       { transform: scale(1.1);  opacity: 0.50; }
+        }
+
+        .div-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.18rem;
+        }
+
+        .div-value {
+            font-weight: 300;
+            font-size: 0.96rem;
+            color: rgba(240, 236, 232, 0.45);
+            white-space: nowrap;
+        }
+
+        .div-label {
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 0.62rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--faint);
+            white-space: nowrap;
+        }
+
+        /* ── Footer ──────────────────────────────────────── */
+        .footer {
+            position: fixed;
+            bottom: 1.4rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 0.72rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--faint);
+            z-index: 20;
+        }
+
+        /* ── Loading pulse ───────────────────────────────── */
+        .loading { animation: pulse 2s ease-in-out infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.25; }
+            50%       { opacity: 0.55; }
+        }
+
+        /* ── Mobile ──────────────────────────────────────── */
+        @media (max-width: 700px) {
+            html, body { height: auto; overflow-y: auto; }
+
+            .dashboard {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .panel { padding: 3rem 1.8rem; }
+
+            .divider {
+                width: 100%;
+                height: 1px;
+                background: linear-gradient(
+                    to right,
+                    transparent 0%,
+                    rgba(240, 236, 232, 0.06) 15%,
+                    rgba(240, 236, 232, 0.14) 50%,
+                    rgba(240, 236, 232, 0.06) 85%,
+                    transparent 100%
+                );
+            }
+
+            .divider-center {
+                flex-direction: row;
+                gap: 1.8rem;
+                padding: 0.8rem 1.4rem;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+
+            .heart { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+
+    <!-- ── Dundee ───────────────────────────── -->
+    <div class="panel panel-dundee">
+        <canvas class="star-canvas" id="stars-dundee"></canvas>
+        <div class="day-glow" id="glow-dundee"></div>
+        <div class="panel-content">
+            <div class="city-label">Dundee, Scotland</div>
+            <div class="weather-icon" id="icon-dundee"></div>
+            <div class="time loading" id="time-dundee">--:--</div>
+            <div class="date-line loading" id="date-dundee">-- --- ----</div>
+            <div class="weather-row">
+                <div class="temperature loading" id="temp-dundee">--&deg;</div>
+                <div class="condition loading" id="cond-dundee">...</div>
+            </div>
+            <div class="wind-line loading" id="wind-dundee">Wind &mdash; km/h</div>
+            <div class="sun-row">
+                <div class="sun-item">
+                    <span class="sun-label">Sunrise</span>
+                    <span class="sun-value loading" id="rise-dundee">--:--</span>
+                </div>
+                <div class="sun-item">
+                    <span class="sun-label">Sunset</span>
+                    <span class="sun-value loading" id="set-dundee">--:--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Divider ──────────────────────────── -->
+    <div class="divider">
+        <div class="divider-center">
+            <svg class="heart" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12 21.59C6.37 16.05 1 11.3 1 6.8 1 3.6 3.6 1 7 1c2.2 0 4.2 1.2 5 3 .8-1.8 2.8-3 5-3 3.4 0 6 2.6 6 5.8 0 4.5-5.37 9.25-11 14.79z"/>
+            </svg>
+            <div class="div-stat">
+                <span class="div-value" id="distance">-- km</span>
+                <span class="div-label">apart</span>
+            </div>
+            <div class="div-stat">
+                <span class="div-value" id="time-diff">-- hrs</span>
+                <span class="div-label">difference</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Hangzhou ─────────────────────────── -->
+    <div class="panel panel-hangzhou">
+        <canvas class="star-canvas" id="stars-hangzhou"></canvas>
+        <div class="day-glow" id="glow-hangzhou"></div>
+        <div class="panel-content">
+            <div class="city-label">Hangzhou, China</div>
+            <div class="weather-icon" id="icon-hangzhou"></div>
+            <div class="time loading" id="time-hangzhou">--:--</div>
+            <div class="date-line loading" id="date-hangzhou">-- --- ----</div>
+            <div class="weather-row">
+                <div class="temperature loading" id="temp-hangzhou">--&deg;</div>
+                <div class="condition loading" id="cond-hangzhou">...</div>
+            </div>
+            <div class="wind-line loading" id="wind-hangzhou">Wind &mdash; km/h</div>
+            <div class="sun-row">
+                <div class="sun-item">
+                    <span class="sun-label">Sunrise</span>
+                    <span class="sun-value loading" id="rise-hangzhou">--:--</span>
+                </div>
+                <div class="sun-item">
+                    <span class="sun-label">Sunset</span>
+                    <span class="sun-value loading" id="set-hangzhou">--:--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="footer" id="footer">Loading...</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────
+const CITIES = {
+    dundee:   { lat: 56.4620, lon: -2.9707, tz: 'Europe/London',   accent: '#7db8e8' },
+    hangzhou: { lat: 30.2741, lon: 120.1551, tz: 'Asia/Shanghai',  accent: '#e8a46a' },
+};
+
+// ── WMO weather code map ──────────────────────────────────────────
+const WEATHER = {
+    0:  { desc: 'Clear Sky',       type: 'clear' },
+    1:  { desc: 'Mainly Clear',    type: 'clear' },
+    2:  { desc: 'Partly Cloudy',   type: 'partly-cloudy' },
+    3:  { desc: 'Overcast',        type: 'cloudy' },
+    45: { desc: 'Foggy',           type: 'fog' },
+    48: { desc: 'Icy Fog',         type: 'fog' },
+    51: { desc: 'Light Drizzle',   type: 'rain' },
+    53: { desc: 'Drizzle',         type: 'rain' },
+    55: { desc: 'Dense Drizzle',   type: 'rain' },
+    61: { desc: 'Light Rain',      type: 'rain' },
+    63: { desc: 'Rain',            type: 'rain' },
+    65: { desc: 'Heavy Rain',      type: 'rain' },
+    71: { desc: 'Light Snow',      type: 'snow' },
+    73: { desc: 'Snow',            type: 'snow' },
+    75: { desc: 'Heavy Snow',      type: 'snow' },
+    77: { desc: 'Snow Grains',     type: 'snow' },
+    80: { desc: 'Light Showers',   type: 'rain' },
+    81: { desc: 'Showers',         type: 'rain' },
+    82: { desc: 'Heavy Showers',   type: 'rain' },
+    85: { desc: 'Snow Showers',    type: 'snow' },
+    86: { desc: 'Heavy Snow',      type: 'snow' },
+    95: { desc: 'Thunderstorm',    type: 'thunder' },
+    96: { desc: 'Thunderstorm',    type: 'thunder' },
+    99: { desc: 'Thunderstorm',    type: 'thunder' },
+};
+
+// ── SVG weather icons (stroke-based, 48x48) ───────────────────────
+function weatherIcon(type, isNight, color) {
+    const S = `stroke="${color}" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"`;
+
+    if (type === 'clear' && isNight) {
+        return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path ${S} d="M32 9C21 9 12 17.5 12 27c0 10.5 9 18 20 18 3.8 0 7.4-1.1 10.4-3
+                C36 40.5 29 34.8 29 27c0-7.8 7-13.5 13.5-14.5A20.5 20.5 0 0 0 32 9z"/>
+        </svg>`;
+    }
+
+    if (type === 'clear') {
+        return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="8" ${S}/>
+            <line x1="24" y1="5"  x2="24" y2="11" ${S}/>
+            <line x1="24" y1="37" x2="24" y2="43" ${S}/>
+            <line x1="5"  y1="24" x2="11" y2="24" ${S}/>
+            <line x1="37" y1="24" x2="43" y2="24" ${S}/>
+            <line x1="10.7" y1="10.7" x2="15"   y2="15"   ${S}/>
+            <line x1="33"   y1="33"   x2="37.3" y2="37.3" ${S}/>
+            <line x1="37.3" y1="10.7" x2="33"   y2="15"   ${S}/>
+            <line x1="15"   y1="33"   x2="10.7" y2="37.3" ${S}/>
+        </svg>`;
+    }
+
+    if (type === 'partly-cloudy') {
+        const moon = isNight
+            ? `<path ${S} opacity=".55" d="M22 10C18 10 14 13.5 14 18c0 .5.05 1 .15 1.5"/>`
+            : `<circle cx="18" cy="16" r="6" ${S}/>
+               <line x1="18" y1="7" x2="18" y2="9.5" ${S}/>
+               <line x1="10" y1="11" x2="11.8" y2="12.8" ${S}/>
+               <line x1="7.5" y1="19" x2="10" y2="19" ${S}/>`;
+        return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            ${moon}
+            <path ${S} d="M22 22a9 9 0 0 1 17.5-2.7A5.5 5.5 0 0 1 40 30H18a7.5 7.5 0 0 1-1-.07
+                A7 7 0 0 1 11 23a7 7 0 0 1 7-7c1.5 0 2.9.5 4 1.3"/>
+        </svg>`;
+    }
+
+    if (type === 'cloudy') {
+        return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path ${S} d="M12 33H38a9 9 0 0 0 0-18 9 9 0 0 0-2.1.26A11 11 0 0 0 14 17
+                a11 11 0 0 0-11 11 11 11 0 0 0 9 10.8"/>
+        </svg>`;
+    }
+
+    if (type === 'fog') {
+        return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path ${S} d="M10 17a9 9 0 0 1 17-2.8A6 6 0 0 1 38 20a6 6 0 0 1-6 6H12a7 7 0 0 1-.5-.03"/>
+            <line x1="8"  y1="31" x2="40" y2="31" ${S}/>
+            <line x1="10" y1="37" x2="38" y2="37" ${S}/>
+            <line x1="14" y1="43" x2="34" y2="43" ${S}/>
+        </svg>`;
+    }
+
+    if (type === 'snow') {
+        return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path ${S} d="M12 26H38a9 9 0 0 0 0-18 9 9 0 0 0-2.1.26A11 11 0 0 0 14 10
+                a11 11 0 0 0-11 11 11 11 0 0 0 9 10.8"/>
+            <circle cx="16" cy="36" r="2" fill="${color}" stroke="none"/>
+            <circle cx="24" cy="36" r="2" fill="${color}" stroke="none"/>
+            <circle cx="32" cy="36" r="2" fill="${color}" stroke="none"/>
+            <circle cx="20" cy="43" r="2" fill="${color}" stroke="none"/>
+            <circle cx="28" cy="43" r="2" fill="${color}" stroke="none"/>
+        </svg>`;
+    }
+
+    if (type === 'thunder') {
+        return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path ${S} d="M12 26H38a9 9 0 0 0 0-18 9 9 0 0 0-2.1.26A11 11 0 0 0 14 10
+                a11 11 0 0 0-11 11 11 11 0 0 0 9 10.8"/>
+            <polyline points="27,30 20,40 26,40 19,50" ${S}/>
+        </svg>`;
+    }
+
+    // rain (default)
+    return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <path ${S} d="M12 26H38a9 9 0 0 0 0-18 9 9 0 0 0-2.1.26A11 11 0 0 0 14 10
+            a11 11 0 0 0-11 11 11 11 0 0 0 9 10.8"/>
+        <line x1="16" y1="33" x2="14" y2="40" ${S}/>
+        <line x1="24" y1="33" x2="22" y2="40" ${S}/>
+        <line x1="32" y1="33" x2="30" y2="40" ${S}/>
+    </svg>`;
+}
+
+// ── Stars ─────────────────────────────────────────────────────────
+function drawStars(id) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const panel = canvas.parentElement;
+    const w = panel.offsetWidth;
+    const h = panel.offsetHeight;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+    const n = Math.floor(w * h / 2800);
+    for (let i = 0; i < n; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        const r = Math.random() * 1.1 + 0.15;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${(Math.random() * 0.55 + 0.15).toFixed(2)})`;
+        ctx.fill();
+    }
+}
+
+// ── Haversine distance ────────────────────────────────────────────
+function distanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dL = (lat2 - lat1) * Math.PI / 180;
+    const dO = (lon2 - lon1) * Math.PI / 180;
+    const a  = Math.sin(dL / 2) ** 2
+             + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dO / 2) ** 2;
+    return Math.round(2 * R * Math.asin(Math.sqrt(a)));
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+const MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function parseLocalISO(iso) {
+    // "2026-05-22T14:32" — already in city local time from Open-Meteo
+    const [date, time] = iso.split('T');
+    const [y, m, d]   = date.split('-').map(Number);
+    const [h, mn]     = time.split(':').map(Number);
+    return { y, m, d, h, mn };
+}
+
+function formatTime(iso) {
+    const { h, mn } = parseLocalISO(iso);
+    return `${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}`;
+}
+
+function formatDate(iso) {
+    const { y, m, d } = parseLocalISO(iso);
+    const dow = new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay();
+    return `${DAYS[dow]}, ${d} ${MONTHS[m - 1]} ${y}`;
+}
+
+function timeStr(isoFull) {
+    // "2026-05-22T05:12" -> "05:12"
+    return (isoFull || '').split('T')[1]?.slice(0, 5) ?? '--:--';
+}
+
+function isDaytime(localISO, sunriseISO, sunsetISO) {
+    const cur   = parseLocalISO(localISO);
+    const curM  = cur.h * 60 + cur.mn;
+    const rise  = (sunriseISO || '').split('T')[1]?.split(':').map(Number) ?? [6, 0];
+    const set   = (sunsetISO  || '').split('T')[1]?.split(':').map(Number) ?? [21, 0];
+    const riseM = rise[0] * 60 + rise[1];
+    const setM  = set[0]  * 60 + set[1];
+    return curM >= riseM && curM < setM;
+}
+
+function getTzOffsetHrs(tz) {
+    const now  = new Date();
+    const utc  = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const loc  = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+    return (loc - utc) / 3_600_000;
+}
+
+function liveTime(tz) {
+    return new Date().toLocaleTimeString('en-GB', {
+        timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+}
+
+function clearLoading(prefix) {
+    ['time','date','temp','cond','wind','rise','set'].forEach(k => {
+        document.getElementById(`${k}-${prefix}`)?.classList.remove('loading');
+    });
+}
+
+// ── Fetch ─────────────────────────────────────────────────────────
+async function fetchWeather(key) {
+    const c   = CITIES[key];
+    const url = `https://api.open-meteo.com/v1/forecast`
+              + `?latitude=${c.lat}&longitude=${c.lon}`
+              + `&current=temperature_2m,weather_code,wind_speed_10m`
+              + `&daily=sunrise,sunset`
+              + `&timezone=${encodeURIComponent(c.tz)}`
+              + `&wind_speed_unit=kmh&forecast_days=1`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Open-Meteo error ${r.status}`);
+    return r.json();
+}
+
+// ── Render city ───────────────────────────────────────────────────
+function renderCity(key, data) {
+    const cur     = data.current;
+    const daily   = data.daily;
+    const localT  = cur.time;          // "2026-05-22T14:32"
+    const sunrise = daily.sunrise[0];
+    const sunset  = daily.sunset[0];
+    const night   = !isDaytime(localT, sunrise, sunset);
+    const wInfo   = WEATHER[cur.weather_code] ?? { desc: 'Unknown', type: 'clear' };
+    const color   = CITIES[key].accent;
+
+    document.getElementById(`icon-${key}`).innerHTML  = weatherIcon(wInfo.type, night, color);
+    document.getElementById(`time-${key}`).textContent = formatTime(localT);
+    document.getElementById(`date-${key}`).textContent = formatDate(localT);
+    document.getElementById(`temp-${key}`).innerHTML   = `${Math.round(cur.temperature_2m)}&deg;C`;
+    document.getElementById(`cond-${key}`).textContent = wInfo.desc;
+    document.getElementById(`wind-${key}`).textContent = `Wind ${Math.round(cur.wind_speed_10m)} km/h`;
+    document.getElementById(`rise-${key}`).textContent = timeStr(sunrise);
+    document.getElementById(`set-${key}`).textContent  = timeStr(sunset);
+
+    const glow = document.getElementById(`glow-${key}`);
+    night ? glow.classList.remove('visible') : glow.classList.add('visible');
+
+    clearLoading(key);
+}
+
+// ── Time difference ───────────────────────────────────────────────
+function updateDiff() {
+    const d = getTzOffsetHrs('Europe/London');
+    const h = getTzOffsetHrs('Asia/Shanghai');
+    const diff = h - d;
+    const sign = diff >= 0 ? '+' : '';
+    const label = Number.isInteger(diff) ? `${sign}${diff} hrs` : `${sign}${diff.toFixed(1)} hrs`;
+    document.getElementById('time-diff').textContent = label;
+}
+
+// ── Live clocks ───────────────────────────────────────────────────
+function tickClocks() {
+    const dEl = document.getElementById('time-dundee');
+    const hEl = document.getElementById('time-hangzhou');
+    if (dEl && !dEl.classList.contains('loading')) dEl.textContent = liveTime('Europe/London');
+    if (hEl && !hEl.classList.contains('loading')) hEl.textContent = liveTime('Asia/Shanghai');
+}
+
+// ── Load all ──────────────────────────────────────────────────────
+async function loadAll() {
+    try {
+        const [dData, hData] = await Promise.all([
+            fetchWeather('dundee'),
+            fetchWeather('hangzhou'),
+        ]);
+        renderCity('dundee', dData);
+        renderCity('hangzhou', hData);
+        updateDiff();
+        const t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('footer').textContent = `Last updated ${t}`;
+    } catch (e) {
+        console.error(e);
+        document.getElementById('footer').textContent = 'Weather unavailable';
+    }
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+const dist = distanceKm(
+    CITIES.dundee.lat, CITIES.dundee.lon,
+    CITIES.hangzhou.lat, CITIES.hangzhou.lon,
+);
+document.getElementById('distance').textContent = `${dist.toLocaleString()} km`;
+
+drawStars('stars-dundee');
+drawStars('stars-hangzhou');
+window.addEventListener('resize', () => {
+    drawStars('stars-dundee');
+    drawStars('stars-hangzhou');
+});
+
+updateDiff();
+loadAll();
+
+setInterval(tickClocks, 30_000);
+setInterval(loadAll, 15 * 60_000);
+</script>
+</body>
+</html>
