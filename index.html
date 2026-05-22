@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,7 +18,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         :root {
             --accent: #9b4dca;
@@ -40,7 +47,9 @@
             }
         }
 
-        html { scroll-behavior: smooth; }
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
             font-family: 'Inter', system-ui, sans-serif;
@@ -107,7 +116,10 @@
             transition: opacity 0.15s, transform 0.15s;
         }
 
-        .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .btn:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
 
         .btn-primary {
             background: var(--accent);
@@ -219,7 +231,9 @@
             text-decoration: none;
         }
 
-        footer a:hover { text-decoration: underline; }
+        footer a:hover {
+            text-decoration: underline;
+        }
 
         /* ── LinkedIn icon (inline SVG path shortcut) ── */
         .li-icon {
@@ -230,6 +244,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <main>
@@ -238,17 +253,21 @@
             <div class="container">
                 <span class="hero-eyebrow">Computer Vision &amp; Industrial Automation</span>
                 <h1>Jamie McTaggart</h1>
-                <p>Lead Controls Engineer &amp; Vision Specialist. I design and build computer vision systems for industrial automation in the pharmaceutical sector.</p>
+                <p>Lead Controls Engineer &amp; Vision Specialist. I design and build computer vision systems for
+                    industrial automation in the pharmaceutical sector.</p>
                 <div class="btn-group">
-                    <a class="btn btn-primary" href="https://www.linkedin.com/in/jamie-mctaggart-40434a282/" target="_blank" rel="noopener">
+                    <a class="btn btn-primary" href="https://www.linkedin.com/in/jamie-mctaggart-40434a282/"
+                        target="_blank" rel="noopener">
                         <svg class="li-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20.447 20.452H17.2v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.967V9h3.102v1.561h.046c.431-.816 1.484-1.676 3.053-1.676 3.268 0 3.869 2.15 3.869 4.948v6.619zM5.337 7.433a1.8 1.8 0 1 1 0-3.601 1.8 1.8 0 0 1 0 3.601zM6.969 20.452H3.7V9h3.269v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.226.792 24 1.771 24h20.451C23.2 24 24 23.226 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                            <path
+                                d="M20.447 20.452H17.2v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.967V9h3.102v1.561h.046c.431-.816 1.484-1.676 3.053-1.676 3.268 0 3.869 2.15 3.869 4.948v6.619zM5.337 7.433a1.8 1.8 0 1 1 0-3.601 1.8 1.8 0 0 1 0 3.601zM6.969 20.452H3.7V9h3.269v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.226.792 24 1.771 24h20.451C23.2 24 24 23.226 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                         </svg>
                         Connect on LinkedIn
                     </a>
                     <a class="btn btn-outline" href="https://github.com/jamiemctaggart" target="_blank" rel="noopener">
                         <svg class="li-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.929.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+                            <path
+                                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.929.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
                         </svg>
                         GitHub
                     </a>
@@ -263,35 +282,66 @@
             <div class="container">
                 <p class="section-label">Projects</p>
                 <div class="card-grid">
+                    <a class="card" href="/misc/vision-sandbox/" target="_blank" rel="noopener">
+                        <span class="card-tag">WebGL &mdash; Three.js</span>
+                        <h3>Industrial Vision Sandbox</h3>
+                        <p>Interactive 3D lighting demo built on Three.js. Drag a virtual light source around a metallic
+                            pharmaceutical blister pack and observe how illumination geometry determines whether a
+                            surface defect is detectable or completely hidden.</p>
+                        <span class="card-arrow">Open &rarr;</span>
+                    </a>
+
+                    <a class="card" href="/misc/calisthenics-tracker/" target="_blank" rel="noopener">
+                        <span class="card-tag">Web App &mdash; PWA</span>
+                        <h3>True-Load Tracker</h3>
+                        <p>Mobile-first PWA for tracking calisthenics volume correctly. Input body weight and external
+                            load to calculate true system weight for pull-ups, dips, push-ups, and more &mdash; then
+                            track real tonnage across a session.</p>
+                        <span class="card-arrow">Open app &rarr;</span>
+                    </a>
 
                     <a class="card" href="/misc/probe-tracker/" target="_blank" rel="noopener">
                         <span class="card-tag">Web App &mdash; PWA</span>
                         <h3>Rebellion Probe Tracker</h3>
-                        <p>A progressive web app for tracking probe deployments in the Star Wars: Rebellion board game. Supports offline play, undo, search, and multiple sort modes.</p>
+                        <p>A progressive web app for tracking probe deployments in the Star Wars: Rebellion board game.
+                            Supports offline play, undo, search, and multiple sort modes.</p>
                         <span class="card-arrow">Open app &rarr;</span>
-                    </a>
-
-                    <a class="card" href="/misc/countdown/" target="_blank" rel="noopener">
-                        <span class="card-tag">Web App</span>
-                        <h3>Countdown</h3>
-                        <p>A personal countdown page tracking two upcoming dates, with a warm and minimal design optimised for mobile.</p>
-                        <span class="card-arrow">Open &rarr;</span>
                     </a>
 
                     <a class="card" href="/misc/plant-monitor/" target="_blank" rel="noopener">
                         <span class="card-tag">Dashboard &mdash; IoT</span>
                         <h3>Plant Monitor</h3>
-                        <p>A bento-grid IoT dashboard for a Raspberry Pi plant watering system. Shows live moisture, light level, and 14-day chart history. Mock data structured for a direct swap to a live API.</p>
+                        <p>A bento-grid IoT dashboard for a Raspberry Pi plant watering system. Shows live moisture,
+                            light level, and 14-day chart history. Mock data structured for a direct swap to a live API.
+                        </p>
                         <span class="card-arrow">Open &rarr;</span>
                     </a>
 
                     <a class="card" href="/misc/palette-extractor/" target="_blank" rel="noopener">
                         <span class="card-tag">Web App &mdash; Client-side</span>
                         <h3>Cinematic Palette Extractor</h3>
-                        <p>Drop a travel photograph to extract its dominant colour palette and receive a vibe classification. Runs entirely in the browser via k-means clustering on Canvas pixel data &mdash; no backend, no uploads.</p>
+                        <p>Drop a travel photograph to extract its dominant colour palette and receive a vibe
+                            classification. Runs entirely in the browser via k-means clustering on Canvas pixel data
+                            &mdash; no backend, no uploads.</p>
                         <span class="card-arrow">Open &rarr;</span>
                     </a>
 
+                    <a class="card" href="/weng/" target="_blank" rel="noopener">
+                        <span class="card-tag">Web App</span>
+                        <h3>Countdown</h3>
+                        <p>A personal countdown page tracking two upcoming dates, with a warm and minimal design
+                            optimised for mobile.</p>
+                        <span class="card-arrow">Open &rarr;</span>
+                    </a>
+
+                    <a class="card" href="/misc/passport-intersection/" target="_blank" rel="noopener">
+                        <span class="card-tag">Interactive Map &mdash; D3.js</span>
+                        <h3>Passport Intersection</h3>
+                        <p>A client-side world map visualising visa-free travel overlaps between two selected passports.
+                            Built with TopoJSON to simplify international travel logistics, featuring live GitHub data
+                            syncing and automated offline fallbacks.</p>
+                        <span class="card-arrow">Open &rarr;</span>
+                    </a>
                 </div>
             </div>
         </section>
@@ -326,12 +376,15 @@
     <footer>
         <div class="container">
             <p>
-                &copy; <script>document.write(new Date().getFullYear())</script> Jamie McTaggart &mdash;
-                <a href="https://www.linkedin.com/in/jamie-mctaggart-40434a282/" target="_blank" rel="noopener">LinkedIn</a> &middot;
+                &copy;
+                <script>document.write(new Date().getFullYear())</script> Jamie McTaggart &mdash;
+                <a href="https://www.linkedin.com/in/jamie-mctaggart-40434a282/" target="_blank"
+                    rel="noopener">LinkedIn</a> &middot;
                 <a href="https://github.com/jamiemctaggart" target="_blank" rel="noopener">GitHub</a>
             </p>
         </div>
     </footer>
 
 </body>
+
 </html>

@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Industrial Vision Sandbox — Jamie McTaggart</title>
+    <meta name="description" content="Interactive lighting sandbox demonstrating the physics of industrial machine vision — specular reflection, defect detection, and illumination geometry.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0c;
+            --surface: #111115;
+            --panel: #16161c;
+            --border: #242430;
+            --text: #e4e4f0;
+            --muted: #7070a0;
+            --accent: #9b4dca;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+            --green:  #22c55e;
+            --blue:   #3b82f6;
+            --amber:  #f59e0b;
+            --red:    #ef4444;
+        }
+
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Top bar ── */
+        .topbar {
+            flex-shrink: 0;
+            height: 52px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
+            gap: 1rem;
+            z-index: 10;
+        }
+
+        .topbar-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .topbar-back:hover { color: var(--text); }
+
+        .topbar-sep { color: var(--border); font-size: 1rem; }
+
+        .topbar-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: var(--text);
+        }
+
+        .topbar-tag {
+            margin-left: auto;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        /* ── Main layout ── */
+        .workspace {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ── Canvas ── */
+        #canvas-wrap {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            cursor: grab;
+        }
+        #canvas-wrap.dragging-light { cursor: crosshair; }
+
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* ── Floating defect annotation ── */
+        #defect-label {
+            position: absolute;
+            pointer-events: none;
+            display: none;
+            transform: translate(-50%, -100%);
+            margin-top: -14px;
+        }
+
+        .defect-badge {
+            background: rgba(239, 68, 68, 0.92);
+            border: 1px solid rgba(255,120,120,0.5);
+            border-radius: 5px;
+            padding: 0.3rem 0.6rem;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            color: #fff;
+            white-space: nowrap;
+            box-shadow: 0 2px 16px rgba(239,68,68,0.4);
+        }
+
+        .defect-badge::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-bottom: none;
+            border-top-color: rgba(239,68,68,0.92);
+        }
+
+        /* ── Overlay hint ── */
+        #drag-hint {
+            position: absolute;
+            bottom: 1.2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.72rem;
+            color: var(--muted);
+            background: rgba(10,10,12,0.7);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.4rem 0.9rem;
+            letter-spacing: 0.04em;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        #drag-hint.hide { opacity: 0; }
+
+        /* ── Right sidebar ── */
+        .sidebar {
+            flex-shrink: 0;
+            width: 290px;
+            background: var(--panel);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        .sidebar-section {
+            padding: 1.2rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.9rem;
+        }
+
+        /* ── Status card ── */
+        #status-card {
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            padding: 1rem;
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .status-mode {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .status-desc {
+            font-size: 0.8rem;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        /* ── Metrics ── */
+        .metric-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .metric {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .metric-name {
+            font-size: 0.76rem;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .metric-bar-wrap {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .metric-bar {
+            height: 100%;
+            border-radius: 2px;
+            background: var(--accent);
+            transition: width 0.15s, background 0.3s;
+        }
+
+        .metric-val {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text);
+            width: 3.2ch;
+            text-align: right;
+        }
+
+        /* ── Light position readout ── */
+        .readout-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .readout-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 0.55rem 0.7rem;
+        }
+
+        .readout-key {
+            font-size: 0.63rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .readout-val {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        /* ── Legend ── */
+        .legend-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.55rem;
+            font-size: 0.78rem;
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 0.28rem;
+        }
+
+        .legend-name {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            color: var(--text);
+            margin-bottom: 0.1rem;
+        }
+
+        .legend-desc {
+            font-size: 0.73rem;
+            color: var(--muted);
+            line-height: 1.45;
+        }
+
+        /* ── About section ── */
+        .about-text {
+            font-size: 0.78rem;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        .about-text + .about-text { margin-top: 0.6rem; }
+
+        .highlight {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* ── Controls hint ── */
+        .controls-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.76rem;
+        }
+
+        .kbd {
+            font-family: var(--font-mono);
+            font-size: 0.66rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.15rem 0.45rem;
+            color: var(--text);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .control-desc { color: var(--muted); }
+
+        /* ── Mobile fallback ── */
+        @media (max-width: 680px) {
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <a class="topbar-back" href="/">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Home
+    </a>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-title">Industrial Vision Sandbox</span>
+    <span class="topbar-tag">Computer Vision &mdash; WebGL</span>
+</div>
+
+<div class="workspace">
+
+    <div id="canvas-wrap">
+        <div id="defect-label">
+            <div class="defect-badge">SURFACE ANOMALY DETECTED</div>
+        </div>
+        <div id="drag-hint">Drag the light sphere &mdash; right-click / two-finger to orbit</div>
+    </div>
+
+    <aside class="sidebar">
+
+        <div class="sidebar-section">
+            <p class="sidebar-label">Lighting Mode</p>
+            <div id="status-card">
+                <div class="status-header">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span class="status-mode" id="status-mode">—</span>
+                </div>
+                <p class="status-desc" id="status-desc">Move the light to begin.</p>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <p class="sidebar-label">Live Metrics</p>
+            <div class="metric-row">
+                <div class="metric">
+                    <span class="metric-name">Elevation</span>
+                    <div class="metric-bar-wrap"><div class="metric-bar" id="bar-elev" style="width:0%"></div></div>
+                    <span class="metric-val" id="val-elev">0°</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-name">Specular</span>
+                    <div class="metric-bar-wrap"><div class="metric-bar" id="bar-spec" style="width:0%"></div></div>
+                    <span class="metric-val" id="val-spec">0%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-name">Defect vis.</span>
+                    <div class="metric-bar-wrap"><div class="metric-bar" id="bar-defect" style="width:0%"></div></div>
+                    <span class="metric-val" id="val-defect">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <p class="sidebar-label">Light Position</p>
+            <div class="readout-grid">
+                <div class="readout-item">
+                    <p class="readout-key">Azimuth</p>
+                    <p class="readout-val" id="r-azimuth">—</p>
+                </div>
+                <div class="readout-item">
+                    <p class="readout-key">Elevation</p>
+                    <p class="readout-val" id="r-elev">—</p>
+                </div>
+                <div class="readout-item">
+                    <p class="readout-key">Distance</p>
+                    <p class="readout-val" id="r-dist">—</p>
+                </div>
+                <div class="readout-item">
+                    <p class="readout-key">Defect</p>
+                    <p class="readout-val" id="r-defect">HIDDEN</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <p class="sidebar-label">Mode Legend</p>
+            <div class="legend-list">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--green)"></div>
+                    <div>
+                        <p class="legend-name">DARK-FIELD OPTIMAL</p>
+                        <p class="legend-desc">Low-angle grazing light casts shadows into surface micro-geometry. Defects, scratches, and raised features become visible.</p>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--blue)"></div>
+                    <div>
+                        <p class="legend-name">DIFFUSE</p>
+                        <p class="legend-desc">Mid-elevation diffuse illumination. Colour and contrast are readable but surface texture detail is reduced.</p>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--amber)"></div>
+                    <div>
+                        <p class="legend-name">BRIGHT-FIELD</p>
+                        <p class="legend-desc">Overhead bright-field configuration. Specular hotspots begin forming; defects are washed out by direct reflection.</p>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--red)"></div>
+                    <div>
+                        <p class="legend-name">SPECULAR GLARE</p>
+                        <p class="legend-desc">Camera is looking directly into the specular reflection cone. Saturation masks all surface detail — the machine vision system is effectively blind.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <p class="sidebar-label">About This Demo</p>
+            <p class="about-text">Pharmaceutical blister packs use <span class="highlight">aluminium foil laminates</span> with metalness &gt;0.9 and roughness &lt;0.15 — making illumination geometry the single largest variable in a vision system's ability to detect defects.</p>
+            <p class="about-text" style="margin-top:0.6rem">The foil surface contains a deliberate <span class="highlight">0.022mm groove defect</span> (the kind caused by a sealing die misalignment). Drag the light to find the angle where it becomes detectable — or disappears entirely.</p>
+            <p class="about-text" style="margin-top:0.6rem">Solving this geometry problem in production — for every product format, every line speed — is what Cognex and Basler systems are configured to do.</p>
+        </div>
+
+        <div class="sidebar-section">
+            <p class="sidebar-label">Controls</p>
+            <div class="controls-list">
+                <div class="control-row">
+                    <span class="kbd">Drag sphere</span>
+                    <span class="control-desc">Move light source</span>
+                </div>
+                <div class="control-row">
+                    <span class="kbd">Right-drag</span>
+                    <span class="control-desc">Orbit camera</span>
+                </div>
+                <div class="control-row">
+                    <span class="kbd">Scroll</span>
+                    <span class="control-desc">Zoom</span>
+                </div>
+                <div class="control-row">
+                    <span class="kbd">Two-finger</span>
+                    <span class="control-desc">Orbit on touch</span>
+                </div>
+            </div>
+        </div>
+
+    </aside>
+</div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+    }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* ── Scene setup ── */
+const wrap   = document.getElementById('canvas-wrap');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+wrap.appendChild(renderer.domElement);
+
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a0c);
+scene.fog = new THREE.Fog(0x0a0a0c, 18, 32);
+
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+const envTexture = pmremGenerator.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+scene.environment = envTexture;
+pmremGenerator.dispose();
+
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+camera.position.set(0, 4.5, 8.5);
+camera.lookAt(0, 0, 0);
+
+/* ── OrbitControls — right-click / two-finger only ── */
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+controls.touches = { ONE: null, TWO: THREE.TOUCH.DOLLY_ROTATE };
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minPolarAngle = 0.1;
+controls.maxPolarAngle = Math.PI * 0.52;
+controls.minDistance = 4;
+controls.maxDistance = 16;
+controls.target.set(0, 0, 0);
+
+/* ── Materials ── */
+const foilMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(0xd0c8be),
+    metalness: 0.95,
+    roughness: 0.12,
+    envMapIntensity: 0.6,
+});
+
+const defectMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(0xb8b0a6),
+    metalness: 0.90,
+    roughness: 0.32,
+    envMapIntensity: 0.4,
+});
+
+const blisterDomeMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(0xc8d4dc),
+    metalness: 0.88,
+    roughness: 0.16,
+    transparent: true,
+    opacity: 0.78,
+    envMapIntensity: 0.5,
+});
+
+/* ── Blister pack base ── */
+const baseGeo = new THREE.BoxGeometry(5.6, 0.06, 4.0, 1, 1, 1);
+const baseMesh = new THREE.Mesh(baseGeo, foilMat);
+baseMesh.receiveShadow = true;
+scene.add(baseMesh);
+
+/* ── Defect geometry — groove cut into a small plane ── */
+const DEFECT_ROW = 1, DEFECT_COL = 2;
+
+function makeGroovePlane() {
+    const geo = new THREE.PlaneGeometry(0.82, 0.82, 24, 24);
+    const pos = geo.attributes.position;
+    const GROOVE_HW = 0.045;
+    for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const z = pos.getY(i);
+        const along = Math.abs(x * 0.819 - z * 0.574);
+        if (along < GROOVE_HW) {
+            const depth = 0.022 * (1 - (along / GROOVE_HW));
+            pos.setZ(i, -depth);
+        }
+    }
+    geo.computeVertexNormals();
+    return geo;
+}
+
+/* ── Dome + defect placement ── */
+const COLS = 4, ROWS = 3;
+const SPACEX = 1.12, SPACEZ = 1.1;
+const offsetX = -(COLS - 1) * SPACEX * 0.5;
+const offsetZ = -(ROWS - 1) * SPACEZ * 0.5;
+
+let defectMesh = null;
+
+for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+        const cx = offsetX + c * SPACEX;
+        const cz = offsetZ + r * SPACEZ;
+
+        /* dome */
+        const domeGeo = new THREE.SphereGeometry(0.34, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.55);
+        const dome = new THREE.Mesh(domeGeo, blisterDomeMat);
+        dome.position.set(cx, 0.16, cz);
+        dome.castShadow = true;
+        scene.add(dome);
+
+        /* foil cell around dome */
+        if (r === DEFECT_ROW && c === DEFECT_COL) {
+            const grooveGeo = makeGroovePlane();
+            defectMesh = new THREE.Mesh(grooveGeo, defectMat);
+            defectMesh.rotation.x = -Math.PI / 2;
+            defectMesh.position.set(cx, 0.032, cz);
+            defectMesh.receiveShadow = true;
+            scene.add(defectMesh);
+        }
+    }
+}
+
+/* ── Ground plane ── */
+const groundGeo = new THREE.PlaneGeometry(20, 20);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x111118, metalness: 0, roughness: 0.95 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.06;
+ground.receiveShadow = true;
+scene.add(ground);
+
+/* ── Light ── */
+const LIGHT_RADIUS = 5.5;
+let lightTheta = Math.PI * 0.18;
+let lightPhi   = Math.PI * 0.22;
+
+const spotLight = new THREE.SpotLight(0xfff4e0, 28, 20, Math.PI * 0.22, 0.55, 1.2);
+spotLight.castShadow = true;
+spotLight.shadow.mapSize.set(1024, 1024);
+spotLight.shadow.camera.near = 1;
+spotLight.shadow.camera.far  = 22;
+scene.add(spotLight);
+scene.add(spotLight.target);
+
+const ambientLight = new THREE.AmbientLight(0x1a1a2e, 1.2);
+scene.add(ambientLight);
+
+/* ── Light gizmo sphere ── */
+const gizmoGeo = new THREE.SphereGeometry(0.15, 20, 16);
+const gizmoMat = new THREE.MeshBasicMaterial({ color: 0xffe066 });
+const gizmo    = new THREE.Mesh(gizmoGeo, gizmoMat);
+scene.add(gizmo);
+
+/* gizmo halo ring */
+const ringGeo = new THREE.TorusGeometry(0.22, 0.018, 8, 32);
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xffe066, transparent: true, opacity: 0.35 });
+const ring    = new THREE.Mesh(ringGeo, ringMat);
+gizmo.add(ring);
+
+function updateLightPosition() {
+    const x = LIGHT_RADIUS * Math.sin(lightPhi) * Math.sin(lightTheta);
+    const y = LIGHT_RADIUS * Math.cos(lightPhi);
+    const z = LIGHT_RADIUS * Math.sin(lightPhi) * Math.cos(lightTheta);
+    spotLight.position.set(x, y, z);
+    spotLight.target.position.set(0, 0, 0);
+    gizmo.position.set(x, y, z);
+    ring.lookAt(camera.position);
+}
+updateLightPosition();
+
+/* ── Drag state ── */
+const raycaster = new THREE.Raycaster();
+const mouse     = new THREE.Vector2();
+let isDragging  = false;
+
+const dragSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), LIGHT_RADIUS);
+
+function getCanvasXY(e) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY);
+    return {
+        x: ((cx - rect.left) / rect.width)  * 2 - 1,
+        y: -((cy - rect.top)  / rect.height) * 2 + 1,
+    };
+}
+
+function pickGizmo(e) {
+    const { x, y } = getCanvasXY(e);
+    mouse.set(x, y);
+    raycaster.setFromCamera(mouse, camera);
+    return raycaster.intersectObject(gizmo, false).length > 0;
+}
+
+function dragTo(e) {
+    const { x, y } = getCanvasXY(e);
+    mouse.set(x, y);
+    raycaster.setFromCamera(mouse, camera);
+
+    const target = new THREE.Vector3();
+    const hit = raycaster.ray.intersectSphere(dragSphere, target);
+    if (!hit) return;
+
+    lightTheta = Math.atan2(target.x, target.z);
+    lightPhi   = Math.max(0.04, Math.min(Math.PI * 0.49, Math.acos(target.y / LIGHT_RADIUS)));
+    updateLightPosition();
+}
+
+renderer.domElement.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    if (pickGizmo(e)) {
+        isDragging = true;
+        controls.enabled = false;
+        wrap.classList.add('dragging-light');
+        hideDragHint();
+    }
+});
+
+renderer.domElement.addEventListener('mousemove', e => {
+    if (isDragging) dragTo(e);
+});
+
+renderer.domElement.addEventListener('mouseup', () => {
+    if (isDragging) { isDragging = false; controls.enabled = true; wrap.classList.remove('dragging-light'); }
+});
+
+renderer.domElement.addEventListener('touchstart', e => {
+    if (e.touches.length === 1 && pickGizmo(e)) {
+        isDragging = true;
+        controls.enabled = false;
+        hideDragHint();
+        e.preventDefault();
+    }
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchmove', e => {
+    if (isDragging) { dragTo(e); e.preventDefault(); }
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchend', () => {
+    if (isDragging) { isDragging = false; controls.enabled = true; }
+});
+
+/* ── Drag hint ── */
+let hintHidden = false;
+function hideDragHint() {
+    if (hintHidden) return;
+    hintHidden = true;
+    document.getElementById('drag-hint').classList.add('hide');
+}
+
+/* ── HUD update ── */
+const MODES = {
+    GLARE:   { label: 'SPECULAR GLARE',     color: 'var(--red)',   bg: 'rgba(239,68,68,0.08)',  borderColor: 'rgba(239,68,68,0.3)',  desc: 'The camera is looking directly into the specular reflection cone. The sensor is saturated — no surface detail is recoverable. In production this means a 100% false-accept rate.' },
+    BRIGHT:  { label: 'BRIGHT-FIELD',       color: 'var(--amber)', bg: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.3)', desc: 'High-angle bright-field illumination. Specular hotspots are forming and flat surfaces wash out. Useful for print inspection, but unreliable for foil defects.' },
+    DIFFUSE: { label: 'DIFFUSE',            color: 'var(--blue)',  bg: 'rgba(59,130,246,0.08)', borderColor: 'rgba(59,130,246,0.3)', desc: 'Mid-range diffuse illumination provides balanced contrast. Colour and dimensional features are readable, but fine surface anomalies lack the contrast needed for reliable detection.' },
+    DARK:    { label: 'DARK-FIELD OPTIMAL', color: 'var(--green)', bg: 'rgba(34,197,94,0.08)',  borderColor: 'rgba(34,197,94,0.3)',  desc: 'Grazing-angle dark-field. Light skims the surface at low elevation, casting micro-shadows into pits and grooves. This is the configuration used in pharmaceutical foil inspection lines.' },
+};
+
+const defectLabel = document.getElementById('defect-label');
+const statusCard  = document.getElementById('status-card');
+const statusDot   = document.getElementById('status-dot');
+const statusMode  = document.getElementById('status-mode');
+const statusDesc  = document.getElementById('status-desc');
+
+function getElevationDeg() {
+    return (Math.PI * 0.5 - lightPhi) * (180 / Math.PI);
+}
+
+function getSpecularDot() {
+    const lp = spotLight.position.clone().normalize();
+    const reflDir = new THREE.Vector3(-lp.x, lp.y, -lp.z).normalize();
+    const camDir  = camera.position.clone().normalize();
+    return Math.max(0, reflDir.dot(camDir));
+}
+
+function getDefectVisibility(elevDeg, specDot) {
+    if (specDot > 0.88) return 0;
+    if (elevDeg < 20)   return Math.min(1, (20 - elevDeg) / 18);
+    if (elevDeg < 40)   return Math.max(0, (40 - elevDeg) / 20) * 0.35;
+    return 0;
+}
+
+function updateHUD() {
+    const elevDeg  = getElevationDeg();
+    const specDot  = getSpecularDot();
+    const defectV  = getDefectVisibility(elevDeg, specDot);
+
+    /* determine mode */
+    let mode;
+    if (specDot > 0.88) mode = 'GLARE';
+    else if (elevDeg > 58) mode = 'BRIGHT';
+    else if (elevDeg > 20) mode = 'DIFFUSE';
+    else mode = 'DARK';
+
+    const m = MODES[mode];
+    statusCard.style.background    = m.bg;
+    statusCard.style.borderColor   = m.borderColor;
+    statusDot.style.background     = m.color;
+    statusMode.style.color         = m.color;
+    statusMode.textContent         = m.label;
+    statusDesc.textContent         = m.desc;
+
+    /* metrics */
+    const elevPct  = Math.min(100, Math.max(0, elevDeg / 90 * 100));
+    const specPct  = Math.min(100, specDot * 100);
+    const defPct   = defectV * 100;
+
+    document.getElementById('bar-elev').style.width   = elevPct + '%';
+    document.getElementById('bar-spec').style.width   = specPct + '%';
+    document.getElementById('bar-defect').style.width = defPct  + '%';
+    document.getElementById('val-elev').textContent   = Math.round(elevDeg) + '°';
+    document.getElementById('val-spec').textContent   = Math.round(specPct) + '%';
+    document.getElementById('val-defect').textContent = Math.round(defPct)  + '%';
+
+    document.getElementById('bar-spec').style.background   = specDot > 0.88 ? 'var(--red)' : (specDot > 0.55 ? 'var(--amber)' : 'var(--accent)');
+    document.getElementById('bar-defect').style.background = defPct > 55 ? 'var(--green)' : (defPct > 20 ? 'var(--blue)' : 'var(--muted)');
+
+    /* readouts */
+    const azimuthDeg = ((lightTheta * 180 / Math.PI) % 360 + 360) % 360;
+    document.getElementById('r-azimuth').textContent = Math.round(azimuthDeg) + '°';
+    document.getElementById('r-elev').textContent    = Math.round(elevDeg) + '°';
+    document.getElementById('r-dist').textContent    = LIGHT_RADIUS.toFixed(1) + ' m';
+    document.getElementById('r-defect').textContent  = defPct > 45 ? 'VISIBLE' : defPct > 15 ? 'PARTIAL' : 'HIDDEN';
+    document.getElementById('r-defect').style.color  = defPct > 45 ? 'var(--green)' : defPct > 15 ? 'var(--amber)' : 'var(--muted)';
+
+    /* defect overlay label */
+    if (defPct > 45 && defectMesh) {
+        const pos3d = defectMesh.position.clone();
+        pos3d.y += 0.3;
+        pos3d.project(camera);
+        const rect = renderer.domElement.getBoundingClientRect();
+        const sx = (pos3d.x *  0.5 + 0.5) * rect.width;
+        const sy = (pos3d.y * -0.5 + 0.5) * rect.height;
+        defectLabel.style.left    = sx + 'px';
+        defectLabel.style.top     = sy + 'px';
+        defectLabel.style.display = 'block';
+        defectLabel.style.opacity = Math.min(1, (defPct - 45) / 15).toString();
+    } else {
+        defectLabel.style.display = 'none';
+    }
+}
+
+/* ── Resize ── */
+function resize() {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(wrap);
+resize();
+
+/* ── Render loop ── */
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    ring.lookAt(camera.position);
+    updateHUD();
+    renderer.render(scene, camera);
+}
+animate();
+</script>
+
+</body>
+</html>

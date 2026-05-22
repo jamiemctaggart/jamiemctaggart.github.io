@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>True-Load — Calisthenics Tracker</title>
+    <meta name="description" content="Calisthenics volume tracker. Calculates true system weight for pull-ups, dips, push-ups and more.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d0f12">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="True-Load">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0d0f12;
+            --surface: #161b22;
+            --surface2: #1e2430;
+            --border: #2a3242;
+            --text: #e2e8f0;
+            --muted: #6e7a99;
+            --accent: #9b4dca;
+            --accent-dim: rgba(155,77,202,0.14);
+            --accent-border: rgba(155,77,202,0.38);
+            --green: #22c55e;
+            --green-dim: rgba(34,197,94,0.12);
+            --green-border: rgba(34,197,94,0.3);
+            --mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --sat: env(safe-area-inset-top, 0px);
+            --sab: env(safe-area-inset-bottom, 0px);
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            overscroll-behavior: none;
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            min-height: -webkit-fill-available;
+        }
+
+        /* ── Top bar ── */
+        .topbar {
+            flex-shrink: 0;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: calc(var(--sat) + 0.65rem) 1rem 0.65rem;
+            gap: 0.75rem;
+            z-index: 20;
+        }
+
+        .topbar-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .topbar-back:hover { color: var(--text); }
+
+        .topbar-sep { color: var(--border); }
+        .topbar-title { font-size: 0.9rem; font-weight: 600; }
+
+        .topbar-pill {
+            margin-left: auto;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-dim);
+            border: 1px solid var(--accent-border);
+            border-radius: 5px;
+            padding: 0.18rem 0.52rem;
+        }
+
+        /* ── BW bar ── */
+        .bw-bar {
+            flex-shrink: 0;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0.6rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .bw-label {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .unit-toggle {
+            margin-left: auto;
+            display: flex;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            overflow: hidden;
+        }
+
+        .unit-btn {
+            padding: 0.32rem 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .unit-btn.active { background: var(--accent); color: #fff; }
+
+        /* ── Stepper widget ── */
+        .stepper-widget {
+            display: flex;
+            align-items: center;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .step-btn {
+            width: 38px;
+            height: 38px;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            font-size: 1.15rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.1s;
+            flex-shrink: 0;
+        }
+        .step-btn:active { background: var(--border); }
+
+        .step-input {
+            width: 58px;
+            background: transparent;
+            border: none;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            padding: 0;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+        .step-input::-webkit-outer-spin-button,
+        .step-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .step-input.w-wide { width: 70px; }
+
+        /* ── Scroll area ── */
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding-bottom: calc(68px + var(--sab));
+        }
+
+        /* ── Exercise strip ── */
+        .exercise-strip-wrap {
+            border-bottom: 1px solid var(--border);
+            padding: 0.7rem 0;
+        }
+
+        .exercise-strip {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0 1rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .exercise-strip::-webkit-scrollbar { display: none; }
+
+        .ex-chip {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.18rem;
+            padding: 0.5rem 0.85rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ex-chip.selected {
+            background: var(--accent-dim);
+            border-color: var(--accent-border);
+        }
+
+        .ex-chip-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+        }
+        .ex-chip.selected .ex-chip-name { color: var(--accent); }
+
+        .ex-chip-pct {
+            font-family: var(--mono);
+            font-size: 0.64rem;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+        .ex-chip.selected .ex-chip-pct { color: var(--accent); opacity: 0.8; }
+
+        /* ── Calc card ── */
+        .calc-card {
+            margin: 1rem 1rem 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.3rem 1.2rem 1.1rem;
+        }
+
+        .section-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.4rem;
+        }
+
+        .true-load-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.35rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .true-load-number {
+            font-family: var(--mono);
+            font-size: clamp(3.2rem, 13vw, 5.2rem);
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1;
+            letter-spacing: -0.03em;
+        }
+
+        .true-load-unit-label {
+            font-family: var(--mono);
+            font-size: 1.25rem;
+            font-weight: 400;
+            color: var(--muted);
+            margin-bottom: 0.1rem;
+        }
+
+        .calc-breakdown {
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            color: var(--muted);
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+        }
+
+        .bwpct-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            background: var(--accent-dim);
+            border: 1px solid var(--accent-border);
+            border-radius: 5px;
+            padding: 0.18rem 0.52rem;
+            color: var(--accent);
+        }
+
+        .custom-pct-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.85rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .custom-pct-label {
+            font-size: 0.8rem;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .custom-pct-suffix {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        /* ── Input rows ── */
+        .inputs-section {
+            margin: 0.75rem 1rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        .input-row {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.65rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .input-row-label {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--muted);
+            flex: 1;
+        }
+
+        .input-row-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .assisted-btn {
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-radius: 5px;
+            padding: 0.22rem 0.52rem;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            white-space: nowrap;
+        }
+        .assisted-btn.active {
+            background: var(--green-dim);
+            border-color: var(--green-border);
+            color: var(--green);
+        }
+
+        .input-unit-suffix {
+            font-size: 0.8rem;
+            color: var(--muted);
+            min-width: 2.5ch;
+        }
+
+        /* ── Volume preview ── */
+        .volume-preview {
+            margin: 0.75rem 1rem 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .vol-item { display: flex; flex-direction: column; gap: 0.18rem; }
+        .vol-item:last-child { text-align: right; }
+        .vol-item:nth-child(2) { text-align: center; }
+
+        .vol-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .vol-value {
+            font-family: var(--mono);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        /* ── Log button ── */
+        .log-btn-wrap { padding: 0.75rem 1rem 0; }
+
+        .log-btn {
+            width: 100%;
+            padding: 0.85rem 1.5rem;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s, background 0.3s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .log-btn:active { transform: scale(0.98); }
+
+        /* ── Session log ── */
+        .session-section {
+            margin: 1.2rem 1rem 0;
+        }
+
+        .session-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.7rem;
+        }
+
+        .session-title {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .session-clear {
+            font-size: 0.75rem;
+            color: var(--muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            transition: color 0.15s;
+        }
+        .session-clear:hover { color: #ef4444; }
+
+        .session-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+        .session-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.7rem 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.2s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .session-item-main { flex: 1; min-width: 0; }
+
+        .session-item-name {
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.18rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .session-item-detail {
+            font-family: var(--mono);
+            font-size: 0.73rem;
+            color: var(--muted);
+        }
+
+        .session-item-vol {
+            font-family: var(--mono);
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .session-item-remove {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-size: 1.05rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            transition: background 0.1s, color 0.1s;
+            -webkit-tap-highlight-color: transparent;
+            flex-shrink: 0;
+        }
+        .session-item-remove:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+        /* ── Footer total ── */
+        .session-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 0.75rem 1.25rem;
+            padding-bottom: calc(0.75rem + var(--sab));
+            display: flex;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .footer-label {
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .footer-right {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .footer-volume {
+            font-family: var(--mono);
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .footer-tonnes {
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+
+    <div class="topbar">
+        <a href="/" class="topbar-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Home
+        </a>
+        <span class="topbar-sep">/</span>
+        <span class="topbar-title">True-Load</span>
+        <span class="topbar-pill">PWA</span>
+    </div>
+
+    <div class="bw-bar">
+        <span class="bw-label">Body weight</span>
+        <div class="stepper-widget">
+            <button class="step-btn" onclick="stepBW(-1)" aria-label="Decrease body weight">&#8722;</button>
+            <input class="step-input w-wide" type="number" id="bw-input" value="88" min="20" max="350" inputmode="decimal" aria-label="Body weight">
+            <button class="step-btn" onclick="stepBW(1)" aria-label="Increase body weight">+</button>
+        </div>
+        <div class="unit-toggle">
+            <button class="unit-btn active" id="unit-kg" onclick="setUnit('kg')">kg</button>
+            <button class="unit-btn" id="unit-lbs" onclick="setUnit('lbs')">lbs</button>
+        </div>
+    </div>
+
+    <div class="scroll-area">
+
+        <div class="exercise-strip-wrap">
+            <div class="exercise-strip" id="exercise-strip"></div>
+        </div>
+
+        <div class="calc-card">
+            <p class="section-label">True System Load</p>
+            <div class="true-load-row">
+                <span class="true-load-number" id="tl-number">—</span>
+                <span class="true-load-unit-label" id="tl-unit">kg</span>
+            </div>
+            <p class="calc-breakdown" id="tl-breakdown"></p>
+            <div id="bwpct-badge-wrap"></div>
+            <div class="custom-pct-row" id="custom-pct-row" style="display:none">
+                <span class="custom-pct-label">Custom BW%</span>
+                <div class="stepper-widget">
+                    <button class="step-btn" onclick="stepCustomPct(-5)">&#8722;</button>
+                    <input class="step-input" type="number" id="custom-pct-input" value="100" min="10" max="120" inputmode="decimal">
+                    <button class="step-btn" onclick="stepCustomPct(5)">+</button>
+                </div>
+                <span class="custom-pct-suffix">%</span>
+            </div>
+        </div>
+
+        <div class="inputs-section">
+            <div class="input-row">
+                <span class="input-row-label" id="ext-label">External load</span>
+                <div class="input-row-right">
+                    <button class="assisted-btn" id="assisted-btn" onclick="toggleAssisted()">Assisted</button>
+                    <div class="stepper-widget">
+                        <button class="step-btn" onclick="stepExt(-2.5)">&#8722;</button>
+                        <input class="step-input w-wide" type="number" id="ext-input" value="0" min="0" max="500" step="2.5" inputmode="decimal" aria-label="External load">
+                        <button class="step-btn" onclick="stepExt(2.5)">+</button>
+                    </div>
+                    <span class="input-unit-suffix" id="ext-unit-label">kg</span>
+                </div>
+            </div>
+            <div class="input-row">
+                <span class="input-row-label">Reps</span>
+                <div class="input-row-right">
+                    <div class="stepper-widget">
+                        <button class="step-btn" onclick="stepReps(-1)">&#8722;</button>
+                        <input class="step-input" type="number" id="reps-input" value="8" min="1" max="200" inputmode="numeric" aria-label="Reps">
+                        <button class="step-btn" onclick="stepReps(1)">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="input-row">
+                <span class="input-row-label">Sets</span>
+                <div class="input-row-right">
+                    <div class="stepper-widget">
+                        <button class="step-btn" onclick="stepSets(-1)">&#8722;</button>
+                        <input class="step-input" type="number" id="sets-input" value="3" min="1" max="20" inputmode="numeric" aria-label="Sets">
+                        <button class="step-btn" onclick="stepSets(1)">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="volume-preview">
+            <div class="vol-item">
+                <span class="vol-label">Per set</span>
+                <span class="vol-value" id="vol-per-set">—</span>
+            </div>
+            <div class="vol-item">
+                <span class="vol-label">Total block</span>
+                <span class="vol-value" id="vol-total">—</span>
+            </div>
+            <div class="vol-item">
+                <span class="vol-label">Tonnage</span>
+                <span class="vol-value" id="vol-tonnes">—</span>
+            </div>
+        </div>
+
+        <div class="log-btn-wrap">
+            <button class="log-btn" id="log-btn" onclick="logSets()">Log 3 Sets</button>
+        </div>
+
+        <div class="session-section" id="session-section" style="display:none">
+            <div class="session-header">
+                <span class="session-title">Session</span>
+                <button class="session-clear" onclick="clearSession()">Clear all</button>
+            </div>
+            <div class="session-list" id="session-list"></div>
+        </div>
+
+        <div style="height:0.75rem"></div>
+
+    </div>
+
+    <div class="session-footer">
+        <span class="footer-label">Session volume</span>
+        <div class="footer-right">
+            <p class="footer-volume" id="footer-volume">0 kg</p>
+            <p class="footer-tonnes" id="footer-tonnes">0.00 t</p>
+        </div>
+    </div>
+
+</div>
+<script>
+const EXERCISES = [
+    { id: 'pullup',    name: 'Pull-up',         bwPct: 1.00 },
+    { id: 'chinup',    name: 'Chin-up',          bwPct: 1.00 },
+    { id: 'dip',       name: 'Dip',              bwPct: 1.00 },
+    { id: 'muscleup',  name: 'Muscle-up',        bwPct: 1.00 },
+    { id: 'pushup',    name: 'Push-up',          bwPct: 0.64 },
+    { id: 'pike',      name: 'Pike Push-up',     bwPct: 0.70 },
+    { id: 'decline',   name: 'Decline Push-up',  bwPct: 0.75 },
+    { id: 'inclineps', name: 'Incline Push-up',  bwPct: 0.41 },
+    { id: 'situp',     name: 'Sit-up',           bwPct: 0.60 },
+    { id: 'inclinesu', name: 'Incline Sit-up',   bwPct: 0.65 },
+    { id: 'custom',    name: 'Custom',           bwPct: null  },
+];
+
+const state = {
+    unit: 'kg',
+    bodyWeightKg: 88,
+    exIdx: 0,
+    customPct: 1.0,
+    extLoadKg: 0,
+    assisted: false,
+    reps: 8,
+    sets: 3,
+    session: [],
+    nextId: 1,
+};
+
+/* ── Unit helpers ── */
+function toDisplay(kg) {
+    return state.unit === 'kg' ? kg : kg * 2.20462;
+}
+function fromDisplay(val) {
+    return state.unit === 'kg' ? val : val / 2.20462;
+}
+function fmtDisp(kg, dp) {
+    const v = toDisplay(kg);
+    const d = dp !== undefined ? dp : (state.unit === 'kg' ? 1 : 1);
+    return v % 1 === 0 && dp === 0 ? v.toFixed(0) : v.toFixed(d);
+}
+function fmtDispAuto(kg) {
+    const v = toDisplay(kg);
+    return v % 1 === 0 ? v.toFixed(0) : v.toFixed(1);
+}
+
+/* ── Persistence ── */
+function savePrefs() {
+    try {
+        localStorage.setItem('tl_v1', JSON.stringify({
+            unit: state.unit,
+            bwKg: state.bodyWeightKg,
+            exIdx: state.exIdx,
+            customPct: state.customPct,
+            extKg: state.extLoadKg,
+            reps: state.reps,
+            sets: state.sets,
+        }));
+    } catch (e) {}
+}
+
+function loadPrefs() {
+    try {
+        const p = JSON.parse(localStorage.getItem('tl_v1') || 'null');
+        if (!p) return;
+        if (p.unit)          state.unit          = p.unit;
+        if (p.bwKg)          state.bodyWeightKg  = p.bwKg;
+        if (p.exIdx != null) state.exIdx         = Math.min(p.exIdx, EXERCISES.length - 1);
+        if (p.customPct)     state.customPct      = p.customPct;
+        if (p.extKg != null) state.extLoadKg      = p.extKg;
+        if (p.reps)          state.reps           = p.reps;
+        if (p.sets)          state.sets           = p.sets;
+    } catch (e) {}
+}
+
+/* ── Computation ── */
+function effectivePct() {
+    const ex = EXERCISES[state.exIdx];
+    return ex.bwPct !== null ? ex.bwPct : state.customPct;
+}
+
+function computeTrueLoadKg() {
+    const ext = state.assisted ? -Math.abs(state.extLoadKg) : state.extLoadKg;
+    return Math.max(0, state.bodyWeightKg * effectivePct() + ext);
+}
+
+/* ── Strip ── */
+function buildStrip() {
+    const strip = document.getElementById('exercise-strip');
+    strip.innerHTML = '';
+    EXERCISES.forEach(function(ex, i) {
+        const btn = document.createElement('button');
+        btn.className = 'ex-chip' + (i === state.exIdx ? ' selected' : '');
+        btn.setAttribute('aria-label', ex.name);
+        btn.addEventListener('click', function() { selectExercise(i); });
+        const pctStr = ex.bwPct !== null ? Math.round(ex.bwPct * 100) + '% BW' : 'Custom';
+        btn.innerHTML =
+            '<span class="ex-chip-name">' + ex.name + '</span>' +
+            '<span class="ex-chip-pct">' + pctStr + '</span>';
+        strip.appendChild(btn);
+    });
+    const sel = strip.querySelector('.selected');
+    if (sel) {
+        setTimeout(function() {
+            sel.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }, 40);
+    }
+}
+
+/* ── Calc card ── */
+function updateCalcCard() {
+    const ex     = EXERCISES[state.exIdx];
+    const pct    = effectivePct();
+    const tKg    = computeTrueLoadKg();
+    const bwDisp = fmtDispAuto(state.bodyWeightKg);
+    const tDisp  = fmtDispAuto(tKg);
+    const unitStr = state.unit;
+    const pctStr  = Math.round(pct * 100);
+
+    document.getElementById('tl-number').textContent = tDisp;
+    document.getElementById('tl-unit').textContent   = unitStr;
+
+    let bd = bwDisp + ' ' + unitStr + ' \xd7 ' + pctStr + '%';
+    if (state.extLoadKg > 0) {
+        const extDisp = fmtDispAuto(state.extLoadKg);
+        if (state.assisted) {
+            bd += ' − ' + extDisp + ' ' + unitStr + ' assist';
+        } else {
+            bd += ' + ' + extDisp + ' ' + unitStr + ' external';
+        }
+    }
+    document.getElementById('tl-breakdown').textContent = bd;
+
+    const wrap = document.getElementById('bwpct-badge-wrap');
+    wrap.innerHTML = (ex.bwPct !== null && ex.bwPct < 1.0)
+        ? '<span class="bwpct-badge">' + pctStr + '% of bodyweight lifts</span>'
+        : '';
+
+    const customRow = document.getElementById('custom-pct-row');
+    customRow.style.display = ex.bwPct === null ? 'flex' : 'none';
+    if (ex.bwPct === null) {
+        document.getElementById('custom-pct-input').value = Math.round(state.customPct * 100);
+    }
+}
+
+/* ── Volume preview ── */
+function updateVolume() {
+    const tKg   = computeTrueLoadKg();
+    const perSet = tKg * state.reps;
+    const total  = perSet * state.sets;
+
+    document.getElementById('vol-per-set').textContent = fmtDispAuto(perSet) + ' ' + state.unit;
+    document.getElementById('vol-total').textContent   = fmtDispAuto(total)  + ' ' + state.unit;
+    document.getElementById('vol-tonnes').textContent  = (total / 1000).toFixed(2) + ' t';
+
+    const label = state.sets === 1 ? 'Log 1 Set' : 'Log ' + state.sets + ' Sets';
+    document.getElementById('log-btn').textContent = label;
+}
+
+/* ── Inputs display ── */
+function updateInputs() {
+    document.getElementById('bw-input').value   = fmtDispAuto(state.bodyWeightKg);
+    document.getElementById('ext-input').value  = fmtDispAuto(state.extLoadKg);
+    document.getElementById('reps-input').value = state.reps;
+    document.getElementById('sets-input').value = state.sets;
+    document.getElementById('ext-unit-label').textContent = state.unit;
+    document.getElementById('tl-unit').textContent = state.unit;
+    document.getElementById('ext-label').textContent = state.assisted ? 'Assistance' : 'External load';
+    document.getElementById('assisted-btn').classList.toggle('active', state.assisted);
+    document.getElementById('unit-kg').classList.toggle('active', state.unit === 'kg');
+    document.getElementById('unit-lbs').classList.toggle('active', state.unit === 'lbs');
+}
+
+/* ── Session ── */
+function renderSession() {
+    const items   = state.session;
+    const section = document.getElementById('session-section');
+    const list    = document.getElementById('session-list');
+
+    section.style.display = items.length > 0 ? 'block' : 'none';
+    list.innerHTML = '';
+
+    for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        const div  = document.createElement('div');
+        div.className = 'session-item';
+        const tDisp   = fmtDispAuto(item.trueLoadKg);
+        const volDisp = fmtDispAuto(item.volumeKg);
+        const sLabel  = item.sets === 1 ? '1 set' : item.sets + ' sets';
+        const aNote   = item.assisted ? ' (assisted)' : '';
+        div.innerHTML =
+            '<div class="session-item-main">' +
+                '<p class="session-item-name">' + item.name + aNote + '</p>' +
+                '<p class="session-item-detail">' +
+                    tDisp + ' ' + state.unit + ' \xd7 ' + item.reps + ' reps \xd7 ' + sLabel +
+                '</p>' +
+            '</div>' +
+            '<span class="session-item-vol">' + volDisp + ' ' + state.unit + '</span>' +
+            '<button class="session-item-remove" data-id="' + item.id + '" aria-label="Remove">\xd7</button>';
+        list.appendChild(div);
+    }
+
+    list.addEventListener('click', function(e) {
+        const btn = e.target.closest('.session-item-remove');
+        if (btn) removeItem(parseInt(btn.dataset.id));
+    });
+
+    updateFooter();
+}
+
+function updateFooter() {
+    const totalKg = state.session.reduce(function(s, i) { return s + i.volumeKg; }, 0);
+    document.getElementById('footer-volume').textContent = fmtDispAuto(totalKg) + ' ' + state.unit;
+    document.getElementById('footer-tonnes').textContent = (totalKg / 1000).toFixed(2) + ' t';
+}
+
+function redraw() {
+    buildStrip();
+    updateInputs();
+    updateCalcCard();
+    updateVolume();
+    renderSession();
+}
+
+/* ── Actions ── */
+function selectExercise(idx) {
+    state.exIdx = idx;
+    buildStrip();
+    updateCalcCard();
+    updateVolume();
+    savePrefs();
+}
+
+function setUnit(unit) {
+    state.unit = unit;
+    updateInputs();
+    updateCalcCard();
+    updateVolume();
+    renderSession();
+    savePrefs();
+}
+
+function stepBW(delta) {
+    const cur = toDisplay(state.bodyWeightKg);
+    const next = Math.max(20, Math.min(350, cur + delta));
+    state.bodyWeightKg = fromDisplay(next);
+    document.getElementById('bw-input').value = fmtDispAuto(state.bodyWeightKg);
+    updateCalcCard();
+    updateVolume();
+    savePrefs();
+}
+
+function stepExt(delta) {
+    const cur  = toDisplay(state.extLoadKg);
+    const next = Math.max(0, Math.min(500, cur + delta));
+    state.extLoadKg = fromDisplay(next);
+    document.getElementById('ext-input').value = fmtDispAuto(state.extLoadKg);
+    updateCalcCard();
+    updateVolume();
+    savePrefs();
+}
+
+function stepReps(delta) {
+    state.reps = Math.max(1, Math.min(200, state.reps + delta));
+    document.getElementById('reps-input').value = state.reps;
+    updateVolume();
+    savePrefs();
+}
+
+function stepSets(delta) {
+    state.sets = Math.max(1, Math.min(20, state.sets + delta));
+    document.getElementById('sets-input').value = state.sets;
+    updateVolume();
+    savePrefs();
+}
+
+function stepCustomPct(delta) {
+    state.customPct = Math.round((Math.max(0.10, Math.min(1.20, state.customPct + delta / 100)) * 100)) / 100;
+    document.getElementById('custom-pct-input').value = Math.round(state.customPct * 100);
+    updateCalcCard();
+    updateVolume();
+}
+
+function toggleAssisted() {
+    state.assisted = !state.assisted;
+    updateInputs();
+    updateCalcCard();
+    updateVolume();
+}
+
+function logSets() {
+    const tKg   = computeTrueLoadKg();
+    const volKg = tKg * state.reps * state.sets;
+    const ex    = EXERCISES[state.exIdx];
+    state.session.push({
+        id: state.nextId++,
+        name: ex.name,
+        trueLoadKg: tKg,
+        reps: state.reps,
+        sets: state.sets,
+        volumeKg: volKg,
+        assisted: state.assisted,
+    });
+    renderSession();
+    const btn = document.getElementById('log-btn');
+    btn.textContent = 'Logged!';
+    btn.style.background = 'var(--green)';
+    setTimeout(function() {
+        btn.style.background = '';
+        updateVolume();
+    }, 900);
+}
+
+function removeItem(id) {
+    state.session = state.session.filter(function(i) { return i.id !== id; });
+    renderSession();
+}
+
+function clearSession() {
+    state.session = [];
+    renderSession();
+}
+
+/* ── Input listeners ── */
+document.getElementById('bw-input').addEventListener('change', function(e) {
+    const v = parseFloat(e.target.value);
+    if (!isNaN(v) && v > 0) {
+        state.bodyWeightKg = fromDisplay(v);
+        updateCalcCard();
+        updateVolume();
+        savePrefs();
+    }
+});
+
+document.getElementById('ext-input').addEventListener('change', function(e) {
+    const v = parseFloat(e.target.value);
+    if (!isNaN(v) && v >= 0) {
+        state.extLoadKg = fromDisplay(v);
+        updateCalcCard();
+        updateVolume();
+        savePrefs();
+    }
+});
+
+document.getElementById('reps-input').addEventListener('change', function(e) {
+    const v = parseInt(e.target.value);
+    if (!isNaN(v) && v >= 1) { state.reps = v; updateVolume(); savePrefs(); }
+});
+
+document.getElementById('sets-input').addEventListener('change', function(e) {
+    const v = parseInt(e.target.value);
+    if (!isNaN(v) && v >= 1) { state.sets = v; updateVolume(); savePrefs(); }
+});
+
+document.getElementById('custom-pct-input').addEventListener('change', function(e) {
+    const v = parseFloat(e.target.value);
+    if (!isNaN(v) && v >= 10 && v <= 120) {
+        state.customPct = v / 100;
+        updateCalcCard();
+        updateVolume();
+    }
+});
+
+/* ── Boot ── */
+loadPrefs();
+redraw();
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/misc/calisthenics-tracker/sw.js').catch(function() {});
+}
+</script>
+</body>
+</html>

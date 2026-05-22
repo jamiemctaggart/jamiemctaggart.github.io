@@ -1,0 +1,10 @@
+{
+    "name": "True-Load Tracker",
+    "short_name": "True-Load",
+    "description": "Calisthenics volume tracker — calculates true system weight for pull-ups, dips, push-ups and more.",
+    "start_url": "/misc/calisthenics-tracker/",
+    "display": "standalone",
+    "background_color": "#0d0f12",
+    "theme_color": "#0d0f12",
+    "icons": []
+}

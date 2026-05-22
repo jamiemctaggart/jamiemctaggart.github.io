@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passport Intersection Map</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
+    <style>
+        :root {
+            --bg-color: #0f0f11;
+            --land-color: #2a2a2e;
+            --border-color: #3f3f46;
+            --text-color: #e4e4e7;
+            --highlight-uk: #a855f7;
+            /* Purple accent for Jamie */
+            --highlight-china: #ef4444;
+            /* Red accent for Weng */
+            --highlight-overlap: #10b981;
+            /* Green for both */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 2rem;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        select {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            background: #18181b;
+            color: white;
+            border: 1px solid var(--border-color);
+            outline: none;
+        }
+
+        .map-container {
+            flex-grow: 1;
+            width: 90%;
+            max-width: 1200px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .country {
+            fill: var(--land-color);
+            stroke: var(--border-color);
+            stroke-width: 0.5;
+            transition: fill 0.3s ease;
+            cursor: pointer;
+        }
+
+        .country:hover {
+            fill: #52525b;
+        }
+
+        /* Tooltip */
+        #tooltip {
+            position: absolute;
+            opacity: 0;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 6px;
+            pointer-events: none;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            transition: opacity 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        /* State Classes added via JS */
+        .status-uk {
+            fill: var(--highlight-uk);
+        }
+
+        .status-china {
+            fill: var(--highlight-china);
+        }
+
+        .status-both {
+            fill: var(--highlight-overlap);
+        }
+
+        #data-warning {
+            display: none;
+            background: #991b1b;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            width: 90%;
+            max-width: 1200px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Passport Intersection</h1>
+        <p>Visualising visa-free access.</p>
+        <div class="controls"><select id="passport1">
+                <option value="none">Select Passport 1</option>
+                <option value="GB" selected>United Kingdom</option>
+            </select><select id="passport2">
+                <option value="none">Select Passport 2</option>
+                <option value="CN" selected>China</option>
+            </select></div>
+    </header>
+    <div id="data-warning"></div>
+    <div class="map-container"><svg id="world-map"></svg>
+        <div id="tooltip"></div>
+    </div>
+    <script>
+        // --- 1. Map & State Setup ---
+        const svg = d3.select("#world-map");
+        const tooltip = d3.select("#tooltip");
+        const width = 1000;
+        const height = 600;
+
+        svg.attr("viewBox", "0 0 " + width + " " + height);
+
+        const projection = d3.geoMercator()
+            .scale(130)
+            .translate([width / 2, height / 1.5]);
+
+        const path = d3.geoPath().projection(projection);
+
+        let currentP1 = "GB";
+        let currentP2 = "CN";
+        let passportData = {}; // Will hold our cleaned, normalized data
+        let isoMapping = {}; // { 826: "gb" }
+        let iso2ToName = {}; // { "gb": "United Kingdom" }
+
+        // --- 2. Data Fetching ---
+        async function fetchPassportData() {
+            const liveUrl = "https://raw.githubusercontent.com/imorte/passport-index-data/main/passport-index.json";
+            const backupUrl = "backup/passport-index.json";
+            const warningBanner = document.getElementById("data-warning");
+
+            try {
+                const response = await fetch(liveUrl);
+                if (!response.ok) throw new Error("Live fetch failed");
+                return await response.json();
+            } catch (error) {
+                console.warn("Falling back to local backup.");
+                try {
+                    const backupResponse = await fetch(backupUrl);
+                    if (!backupResponse.ok) throw new Error("Backup inaccessible");
+
+                    const lastMod = backupResponse.headers.get("Last-Modified");
+                    const dateString = lastMod ? new Date(lastMod).toLocaleDateString('en-GB') : "Unknown date";
+
+                    warningBanner.style.display = "block";
+                    warningBanner.innerHTML = `⚠️ <strong>Offline Mode:</strong> Using local backup (Updated: ${dateString}).`;
+                    return await backupResponse.json();
+                } catch (backupError) {
+                    warningBanner.style.display = "block";
+                    warningBanner.style.background = "#7f1d1d";
+                    warningBanner.innerHTML = "❌ <strong>Error:</strong> Data unavailable.";
+                    return null;
+                }
+            }
+        }
+
+        function populateDropdowns() {
+            const p1Select = document.getElementById("passport1");
+            const p2Select = document.getElementById("passport2");
+
+            p1Select.innerHTML = "";
+            p2Select.innerHTML = "";
+
+            const availablePassports = Object.keys(passportData);
+
+            const countryList = availablePassports.map(code => {
+                return {
+                    code: code.toUpperCase(),
+                    name: iso2ToName[code.toLowerCase()] || code.toUpperCase()
+                };
+            }).sort((a, b) => a.name.localeCompare(b.name));
+
+            countryList.forEach(country => {
+                const opt1 = document.createElement("option");
+                opt1.value = country.code;
+                opt1.text = country.name;
+                if (country.code === "GB") opt1.selected = true;
+                p1Select.appendChild(opt1);
+
+                const opt2 = document.createElement("option");
+                opt2.value = country.code;
+                opt2.text = country.name;
+                if (country.code === "CN") opt2.selected = true;
+                p2Select.appendChild(opt2);
+            });
+        }
+
+        // --- 3. Initialisation & Normalisation ---
+        async function initMap() {
+            const rawData = await fetchPassportData();
+            if (!rawData) return;
+
+            // THE FIX: Data Normalization
+            // We loop through the messy raw API data and force all keys and statuses 
+            // into clean lowercase strings so our matching logic never fails.
+            for (let pKey in rawData) {
+                passportData[pKey.toLowerCase()] = {};
+                for (let dKey in rawData[pKey]) {
+                    let val = rawData[pKey][dKey];
+                    // Handle API variations (sometimes an object {status: 'x'}, sometimes just a string)
+                    let statusStr = (typeof val === 'object' && val !== null) ? val.status : val;
+                    passportData[pKey.toLowerCase()][dKey.toLowerCase()] = {
+                        status: String(statusStr).toLowerCase().trim()
+                    };
+                }
+            }
+
+            try {
+                const isoRes = await fetch("https://raw.githubusercontent.com/lukes/ISO-3166-Countries-with-Regional-Codes/master/all/all.json");
+                const isoData = await isoRes.json();
+
+                isoData.forEach(country => {
+                    if (country["alpha-2"]) {
+                        const iso2 = country["alpha-2"].toLowerCase();
+                        const numericCode = parseInt(country["country-code"], 10);
+
+                        if (!isNaN(numericCode)) {
+                            isoMapping[numericCode] = iso2;
+                        }
+                        iso2ToName[iso2] = country["name"];
+                    }
+                });
+            } catch (e) {
+                console.error("Failed to load ISO dictionary", e);
+                return;
+            }
+
+            populateDropdowns();
+
+            d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {
+                const countries = topojson.feature(world, world.objects.countries).features;
+
+                svg.selectAll(".country")
+                    .data(countries)
+                    .enter().append("path")
+                    .attr("class", "country")
+                    .attr("d", path)
+                    .attr("id", d => d.id)
+                    .on("mouseover", function (event, d) {
+                        const countryName = d.properties.name || "Unknown";
+
+                        const numericId = parseInt(d.id, 10);
+                        const destIso2 = isoMapping[numericId];
+
+                        let p1Status = "visa required";
+                        let p2Status = "visa required";
+
+                        if (destIso2) {
+                            if (currentP1.toLowerCase() === destIso2) {
+                                p1Status = "home country";
+                            } else {
+                                p1Status = passportData[currentP1.toLowerCase()]?.[destIso2]?.status || "visa required";
+                            }
+
+                            if (currentP2.toLowerCase() === destIso2) {
+                                p2Status = "home country";
+                            } else {
+                                p2Status = passportData[currentP2.toLowerCase()]?.[destIso2]?.status || "visa required";
+                            }
+
+                            // Clean up specific raw JSON string markers
+                            if (p1Status === "-1") p1Status = "home country";
+                            if (p2Status === "-1") p2Status = "home country";
+                        }
+
+                        tooltip.transition().duration(200).style("opacity", 1);
+                        tooltip.html(`
+                            <strong style="font-size:1rem;">${countryName}</strong><br/>
+                            <div style="margin-top: 6px;">
+                                <span style="color: var(--highlight-uk)">${currentP1}:</span> ${p1Status.toUpperCase()}<br/>
+                                <span style="color: var(--highlight-china)">${currentP2}:</span> ${p2Status.toUpperCase()}
+                            </div>
+                        `)
+                            .style("left", (event.pageX + 15) + "px")
+                            .style("top", (event.pageY - 30) + "px");
+                    })
+                    .on("mouseout", function () {
+                        tooltip.transition().duration(500).style("opacity", 0);
+                    });
+
+                updateMapColors();
+            });
+        }
+
+        // --- 4. Logic & Interactions ---
+        function updateMapColors() {
+            // Expanded to catch hyphenated variations in case the API data changes
+            const allowedStatuses = ["visa free", "visa-free", "visa on arrival", "eta", "e-visa", "evisa", "-1"];
+
+            svg.selectAll(".country").attr("class", d => {
+                let baseClass = "country ";
+
+                const numericId = parseInt(d.id, 10);
+                const destIso2 = isoMapping[numericId];
+
+                if (!destIso2) return baseClass;
+
+                const p1 = currentP1.toLowerCase();
+                const p2 = currentP2.toLowerCase();
+
+                // Automatically pass the check if it's the passport holder's home country
+                const p1Req = (p1 === destIso2) ? "-1" : passportData[p1]?.[destIso2]?.status;
+                const p2Req = (p2 === destIso2) ? "-1" : passportData[p2]?.[destIso2]?.status;
+
+                const p1CanVisit = allowedStatuses.includes(p1Req);
+                const p2CanVisit = allowedStatuses.includes(p2Req);
+
+                if (p1CanVisit && p2CanVisit) {
+                    return baseClass + "status-both";
+                } else if (p1CanVisit) {
+                    return baseClass + "status-uk";
+                } else if (p2CanVisit) {
+                    return baseClass + "status-china";
+                }
+
+                return baseClass;
+            });
+        }
+
+        d3.select("#passport1").on("change", function () {
+            currentP1 = this.value;
+            updateMapColors();
+        });
+        d3.select("#passport2").on("change", function () {
+            currentP2 = this.value;
+            updateMapColors();
+        });
+
+        initMap();
+    </script>
+</body>
+
+</html>

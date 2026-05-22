@@ -290,7 +290,7 @@
         <div class="header">
             <p class="eyebrow">counting down</p>
             <h1 class="headline">Until we're<br><em>together</em></h1>
-            <p class="subline">Every day apart is a day closer to you.</p>
+            <p class="subline">Counting down to my favorite person.</p>
         </div>
 
         <div class="primary-card" id="primary-card">
@@ -343,7 +343,7 @@
             </div>
         </div>
 
-        <p class="closing">The best things are worth waiting for.</p>
+        <p class="closing" id="closing-text"></p>
 
         <div class="adventures-section" id="adventures-section" style="display:none;">
             <div class="adventures-label">Previous Adventures</div>
@@ -354,9 +354,9 @@
 
     <script>
         const ADVENTURES = [
-            { start: new Date('2026-04-30T00:00:00'), end: new Date('2026-05-06T23:59:59') },
-            { start: new Date('2026-07-07T00:00:00'), end: new Date('2026-07-12T23:59:59') },
-            { start: new Date('2026-09-25T00:00:00'), end: new Date('2026-10-06T23:59:59') },
+            { start: new Date('2026-04-30T00:00:00'), end: new Date('2026-05-06T23:59:59'), msg: "Shanghai and Hangzhou." },
+            { start: new Date('2026-07-07T11:30:00+07:00'), end: new Date('2026-07-12T23:59:59'), msg: "See you in Bangkok, babe." },
+            { start: new Date('2026-09-25T17:00:00+03:00'), end: new Date('2026-10-07T23:59:59'), msg: "Ready for Turkey?" },
         ];
 
         function pad(n) { return String(n).padStart(2, '0'); }
@@ -371,10 +371,10 @@
 
         function breakdown(ms) {
             return {
-                days:  Math.floor(ms / 86400000),
+                days: Math.floor(ms / 86400000),
                 hours: Math.floor((ms % 86400000) / 3600000),
-                mins:  Math.floor((ms % 3600000) / 60000),
-                secs:  Math.floor((ms % 60000) / 1000),
+                mins: Math.floor((ms % 3600000) / 60000),
+                secs: Math.floor((ms % 60000) / 1000),
             };
         }
 
@@ -394,7 +394,7 @@
 
         function tick() {
             const now = Date.now();
-            const active   = ADVENTURES.find(a => a.start.getTime() <= now && a.end.getTime() >= now);
+            const active = ADVENTURES.find(a => a.start.getTime() <= now && a.end.getTime() >= now);
             const upcoming = ADVENTURES.filter(a => a.start.getTime() > now);
 
             if (active) {
@@ -413,26 +413,27 @@
                 return;
             }
 
-            const primary   = upcoming[0];
+            const primary = upcoming[0];
             const secondary = upcoming[1] || null;
 
             const p = breakdown(primary.start.getTime() - now);
-            document.getElementById('days').textContent  = pad(p.days);
+            document.getElementById('days').textContent = pad(p.days);
             document.getElementById('hours').textContent = pad(p.hours);
-            document.getElementById('mins').textContent  = pad(p.mins);
-            document.getElementById('secs').textContent  = pad(p.secs);
+            document.getElementById('mins').textContent = pad(p.mins);
+            document.getElementById('secs').textContent = pad(p.secs);
             document.getElementById('primary-date').textContent = fmtFull(primary.start);
 
             if (secondary) {
                 const s = breakdown(secondary.start.getTime() - now);
-                document.getElementById('s-days').textContent  = pad(s.days);
+                document.getElementById('s-days').textContent = pad(s.days);
                 document.getElementById('s-hours').textContent = pad(s.hours);
-                document.getElementById('s-mins').textContent  = pad(s.mins);
+                document.getElementById('s-mins').textContent = pad(s.mins);
                 document.getElementById('secondary-date').textContent = fmtFull(secondary.start);
                 document.getElementById('secondary-section').style.display = 'block';
             } else {
                 document.getElementById('secondary-section').style.display = 'none';
             }
+            document.getElementById('closing-text').textContent = primary.msg;
 
             renderPreviousAdventures();
         }
