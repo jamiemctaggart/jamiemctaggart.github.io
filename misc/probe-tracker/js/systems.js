@@ -1,296 +1,262 @@
-// Finds the target to add list items
 var target = document.getElementById("SystemList");
 var subjugatedTarget = document.getElementById("SubjugatedSystemList");
-const sort = document.getElementById('sortText');
-// Generates the full list of systems as a list of strings
-const fullList = ["Alderaan", "Bespin", "Bothawui", "Cato Neimoidia", "Corellia",
- "Dagobah", "Dantooine", "Dathomir", "Endor", "Feluica", "Geonosis", "Hoth",
-  "Ilum", "Kashyyk", "Kessel", "Malastare", "Mandalore", "Mon Calamari", "Mustafar",
-   "Mygeeto", "Naboo", "Nal Hutta", "Ord Mantell", "Rodia", "Ryloth", "Saleucami",
-    "Sullust", "Tatooine", "Toydaria", "Utapau", "Yavin"];
-const fullListRegions = [7,8,2,7,7,
-5,6,4,8,1,3,8,
-6,4,2,4,4,1,8,
-6,5,2,6,3,3,1,
-5,3,2,5,1]
-fullListRisk = [2,1,1,1,1,2,3,3,3,1,1,3,3,1,2,2,1,2,1,1,1,2,1,2,3,1,1,3,1,1,3]// 3 is highest risk 1 is lowest
-fullListConquerVal = [1,2,2,2,3,1,1,1,1,1,3,1,1,1,1,1,1,3,2,4,1,1,3,1,1,2,3,1,2,4,1] // 4 is super priority 1 is lowest
-//var shownListItems = [];
 
-// Read the cookie when the page is first opened
+const fullList = [
+    "Alderaan", "Bespin", "Bothawui", "Cato Neimoidia", "Corellia",
+    "Dagobah", "Dantooine", "Dathomir", "Endor", "Felucia", "Geonosis", "Hoth",
+    "Ilum", "Kashyyk", "Kessel", "Malastare", "Mandalore", "Mon Calamari", "Mustafar",
+    "Mygeeto", "Naboo", "Nal Hutta", "Ord Mantell", "Rodia", "Ryloth", "Saleucami",
+    "Sullust", "Tatooine", "Toydaria", "Utapau", "Yavin"
+];
+const fullListRegions =    [7,8,2,7,7, 5,6,4,8,1,3,8, 6,4,2,4,4,1,8, 6,5,2,6,3,3,1, 5,3,2,5,1];
+const fullListRisk =       [2,1,1,1,1, 2,3,3,3,1,1,3, 3,1,2,2,1,2,1, 1,1,2,1,2,3,1, 1,3,1,1,3];
+const fullListConquerVal =  [1,2,2,2,3, 1,1,1,1,1,3,1, 1,1,1,1,1,3,2, 4,1,1,3,1,1,2, 3,1,2,4,1];
+
 const cookieValue = document.cookie
-  .split('; ')
-  .find(row => row.startsWith('shownListItems='))
-  ?.split('=')[1];
+    .split('; ')
+    .find(row => row.startsWith('shownListItems='))
+    ?.split('=')[1];
 
-var shownListItems = cookieValue ? JSON.parse(cookieValue) : /* default value */ [];
-
-
+var shownListItems = cookieValue ? JSON.parse(cookieValue) : [];
 var probeHistory = [];
-//var regionSort = false;
-var sortType = 0; // default
-// if length is 0 then it is the first time the page has been opened so set all to 0 (not probed) with full refresh
-refreshSystems(shownListItems.length == 0);
+var sortType = 0;
 
-const allZeros = shownListItems.every((val, i, arr) => val === 0);
-if (shownListItems.length != 0 && !allZeros) {
+refreshSystems(shownListItems.length === 0);
+
+const allZeros = shownListItems.every(val => val === 0);
+if (shownListItems.length !== 0 && !allZeros) {
     showNotification();
 }
 
 function searchFunction() {
-    // Get input element
-    let input = document.getElementById('searchInput');
-    // Convert input to uppercase for case-insensitive searching
-    let filter = input.value.toUpperCase();
-
-    // Get system list elements
-    let systemList = document.getElementById('SystemList');
-    let subjugatedSystemList = document.getElementById('SubjugatedSystemList');
-
-    // Combine both lists into an array
-    let lists = [systemList, subjugatedSystemList];
-
-    // Loop through both lists
-    for (let list of lists) {
-        // Get all systems in the list
-        let systems = list.getElementsByTagName('dt');
-
-        // Loop through all system items, and hide those who don't match the search query
-        for (let i = 0; i < systems.length; i++) {
-            let txtValue = systems[i].textContent || systems[i].innerText;
-            if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                systems[i].style.display = "";
-            } else {
-                systems[i].style.display = "none";
-            }
+    const filter = document.getElementById('searchInput').value.toUpperCase();
+    const lists = [
+        document.getElementById('SystemList'),
+        document.getElementById('SubjugatedSystemList')
+    ];
+    for (const list of lists) {
+        const cards = list.getElementsByClassName('system-card');
+        for (let i = 0; i < cards.length; i++) {
+            const name = cards[i].querySelector('.system-name').textContent;
+            cards[i].style.display = name.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
         }
     }
 }
 
 function clearSearch() {
     document.getElementById('searchInput').value = '';
-    searchFunction(); // Call search function to reset the results after clearing the input
+    searchFunction();
     refresh();
 }
 
 function showNotification() {
-    const notification = document.getElementById("notification");
-    notification.style.display = "block";
-    notification.innerHTML = "Loaded saved list. <span class='closebtn' onclick='closeNotification()'>x</span>";
+    const el = document.getElementById('notification');
+    el.style.display = 'block';
+    el.innerHTML = "Loaded saved list. <span class='closebtn' onclick='closeNotification()'>x</span>";
 }
 
 function closeNotification() {
-    const notification = document.getElementById("notification");
-    notification.style.display = "none";
+    document.getElementById('notification').style.display = 'none';
 }
 
 function changeSort(newType) {
-    //regionSort = !regionSort;//Swap sorting system
-    // If sets to 1 and already 1 change to 0 instead
-    if (sortType == newType) {
-        sortType = 0;
-    }
-    else {
-        sortType = newType;
-    }
+    sortType = (sortType === newType) ? 0 : newType;
     refresh();
 }
 
 function saveCookie() {
-    // Convert the integer array to a JSON string
-    const shownListItemsString = JSON.stringify(shownListItems);
-
-    // Write the shownListItemsString to a cookie
-    document.cookie = `shownListItems=${shownListItemsString}`;
+    document.cookie = `shownListItems=${JSON.stringify(shownListItems)}`;
 }
 
 function deleteCookie() {
-    document.cookie = "shownListItems=; expires=Thu, 01 Jan 1970 00:00:00 UTC"; 
+    document.cookie = "shownListItems=; expires=Thu, 01 Jan 1970 00:00:00 UTC";
 }
 
-function refresh(){
-    target.innerHTML = "";
-    subjugatedTarget.innerHTML = "";
+function refresh() {
+    target.innerHTML = '';
+    subjugatedTarget.innerHTML = '';
     document.getElementById('searchInput').value = '';
-    //subjugatedTarget.innerHTML = '<dt><h3 style="margin:auto; text-align:center;">Subjugated Systems</h3></dt>';
-    if (sortType == 0) {
-        alphabetRefresh();// Not full refresh
-        sort.innerText = "Alphabet Sort"
-    } else if (sortType == 1) {
-        sortedRefresh(false);//If here region sort is enabled
-        sort.innerText = "Region Sort"
-    } else if (sortType == 2) {
-        // conquer sort type
-        conquerRefresh();
-        sort.innerText = "Conquer Sort"
-    } else if (sortType == 3) {
-        riskRefresh();
-        sort.innerText = "Risk Sort"
-    }
+
+    if (sortType === 0) alphabetRefresh();
+    else if (sortType === 1) sortedRefresh(false);
+    else if (sortType === 2) conquerRefresh();
+    else if (sortType === 3) riskRefresh();
+
     highlightActiveSort(sortType);
     subjugatedRefresh();
+    updateStats();
 }
 
-function highlightActiveSort(sortType) {
-    var sortButtons = document.getElementsByClassName("sortButton");
-    for (var i = 0; i < sortButtons.length; i++) {
-        sortButtons[i].classList.remove("active");
+function highlightActiveSort(type) {
+    const buttons = document.getElementsByClassName('sortButton');
+    for (let i = 0; i < buttons.length; i++) {
+        buttons[i].classList.toggle('active', i === type);
     }
-    sortButtons[sortType].classList.add("active");
 }
 
-function alphabetRefresh(){
-    for (var i = 0; i < fullList.length; i++)
-        if (shownListItems[i] == 0)// If not probed
-            addSystem(i);
+function updateStats() {
+    const remaining   = shownListItems.filter(v => v === 0).length;
+    const probed      = shownListItems.filter(v => v === 2).length;
+    const subjugated  = shownListItems.filter(v => v === 1).length;
+    const bar = document.getElementById('stats-bar');
+    if (bar) {
+        bar.innerHTML =
+            `<span class="stat-item"><strong>${remaining}</strong> remaining</span>` +
+            `<span class="stat-sep">|</span>` +
+            `<span class="stat-item"><strong>${probed}</strong> probed</span>` +
+            `<span class="stat-sep">|</span>` +
+            `<span class="stat-item"><strong>${subjugated}</strong> subjugated</span>`;
+    }
+}
+
+function alphabetRefresh() {
+    for (let i = 0; i < fullList.length; i++)
+        if (shownListItems[i] === 0) addSystem(i);
 }
 
 function subjugatedRefresh() {
-    target.innerHTML += '';
-    for (var i = 0; i < fullList.length; i++)
-        if (shownListItems[i] == 1)// If not probed
-            addSystem(i, true);
+    for (let i = 0; i < fullList.length; i++)
+        if (shownListItems[i] === 1) addSystem(i, true);
 }
 
 function sortedRefresh(fullRefresh = true) {
-    if (fullRefresh)
-        fullRefreshList();
-    for (var region = 1; region <= 8; region++) {
-        var notProbed = 0;
-        for (var i = 0; i < fullList.length; i++)
-            if (fullListRegions[i] == region)
-                if (shownListItems[i] == 0) notProbed++;
-        if (notProbed == 0) continue;
-        target.innerHTML += '<dt id="imgBox"><img src="Images/region' + region + '.png" width="100%"/></dt>';
-        for (var i = 0; i < fullList.length; i++)
-            if (fullListRegions[i] == region && shownListItems[i] == 0)
+    if (fullRefresh) fullRefreshList();
+    for (let region = 1; region <= 8; region++) {
+        const notProbed = fullList.filter((_, i) =>
+            fullListRegions[i] === region && shownListItems[i] === 0
+        ).length;
+        if (notProbed === 0) continue;
+        target.innerHTML += `<div class="region-header"><img src="Images/region${region}.png" width="100%"/></div>`;
+        for (let i = 0; i < fullList.length; i++)
+            if (fullListRegions[i] === region && shownListItems[i] === 0)
                 addSystem(i);
     }
 }
 
 function conquerRefresh() {
-    for (var conquerVal = 4; conquerVal > 0; conquerVal--) {
-        toAdd = [] //Start with an empty array of systems to add for the category
-        for (var i = 0; i < fullList.length; i++) // Add to list if the correct conquer value and currently shown
-            if (fullListConquerVal[i] == conquerVal && shownListItems[i] == 0)
-                toAdd.push(i)
-        if (toAdd.length != 0) {
-            target.innerHTML += '<dt style="padding-bottom: 1rem;"><h3 style="margin:auto; text-align:center;">Conquer Value ' + conquerVal + ' (' + toAdd.length + ')</h3></dt>';
-            for (var c = 0; c < toAdd.length; c++)
-                addSystem(toAdd[c]);
-        }
+    for (let cv = 4; cv > 0; cv--) {
+        const toAdd = fullList
+            .map((_, i) => i)
+            .filter(i => fullListConquerVal[i] === cv && shownListItems[i] === 0);
+        if (toAdd.length === 0) continue;
+        target.innerHTML += `<div class="section-header"><h3>Conquer Value ${cv} <span class="count">(${toAdd.length})</span></h3></div>`;
+        for (const i of toAdd) addSystem(i);
     }
 }
 
 function riskRefresh() {
-    for (var riskVal = 3; riskVal > 0; riskVal--) {
-        toAdd = [] //Start with an empty array of systems to add for the category
-        for (var i = 0; i < fullList.length; i++) // Add to list if the correct risk value and currently shown
-            if (fullListRisk[i] == riskVal && shownListItems[i] == 0)
-                toAdd.push(i)
-        if (toAdd.length != 0) {
-            target.innerHTML += '<dt style="padding-bottom: 1rem;"><h3 style="margin:auto; text-align:center;">Risk Value ' + riskVal + ' (' + toAdd.length + ')</h3></dt>';
-            for (var c = 0; c < toAdd.length; c++)
-                addSystem(toAdd[c]);
-        }
+    const labels = { 3: 'High Risk', 2: 'Medium Risk', 1: 'Low Risk' };
+    for (let rv = 3; rv > 0; rv--) {
+        const toAdd = fullList
+            .map((_, i) => i)
+            .filter(i => fullListRisk[i] === rv && shownListItems[i] === 0);
+        if (toAdd.length === 0) continue;
+        target.innerHTML += `<div class="section-header"><h3>${labels[rv]} <span class="count">(${toAdd.length})</span></h3></div>`;
+        for (const i of toAdd) addSystem(i);
     }
 }
 
 function addSystem(i, subjugated = false) {
-    // First check if additional style is required
-    style = '';
-    if (fullListRisk[i] == 3)
-        style = 'style="color:red;"';
-    else if (fullListRisk[i] == 2)
-        style = 'style="color:yellow;"';
-    
-    // Now add the planet to either the subjugated list or the regular list
-    if (subjugated)
-        subjugatedTarget.innerHTML += '<dt id="' + i + '"><p ' + style + ' class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe</button><button class="button float-right" onclick="toggleSubjugate(' + i + ')">Unsubjugate</button></dt>';
-    else
-        target.innerHTML += '<dt id="' + i + '"><p ' + style + ' class="float-left">' + fullList[i] + '</p><button class="button float-right" onclick="removeSystem(' + i + ')">Probe</button><button class="button float-right" onclick="toggleSubjugate(' + i + ')">Subjugate</button></dt>';
+    const risk    = fullListRisk[i];
+    const region  = fullListRegions[i];
+    const cv      = fullListConquerVal[i];
+    const riskClass = risk === 3 ? 'risk-high' : risk === 2 ? 'risk-med' : 'risk-low';
+    const riskLabel = risk === 3 ? 'High' : risk === 2 ? 'Med' : 'Low';
+
+    const card = `<div class="system-card" id="sys-${i}">
+        <div class="system-info">
+            <span class="system-name">${fullList[i]}</span>
+            <div class="system-badges">
+                <span class="badge badge-region">R${region}</span>
+                <span class="badge badge-risk ${riskClass}">${riskLabel} Risk</span>
+                <span class="badge badge-cv">CV ${cv}</span>
+            </div>
+        </div>
+        <div class="system-actions">
+            ${subjugated
+                ? `<button class="btn-action btn-unsubjugate" onclick="toggleSubjugate(${i})">Unsubjugate</button>`
+                : `<button class="btn-action btn-subjugate" onclick="toggleSubjugate(${i})">Subjugate</button>`
+            }
+            <button class="btn-action btn-probe" onclick="removeSystem(${i})">Probe</button>
+        </div>
+    </div>`;
+
+    if (subjugated) subjugatedTarget.innerHTML += card;
+    else target.innerHTML += card;
 }
 
 function fullRefreshList() {
-    shownListItems = [];
+    shownListItems = fullList.map(() => 0);
     closeNotification();
     probeHistory = [];
-    for (var i = 0; i < fullList.length; i++)
-        shownListItems.push(0);
     saveCookie();
 }
 
-
 function refreshSystems(fullRefresh = true) {
-    if (fullRefresh) 
-        fullRefreshList();
+    if (fullRefresh && shownListItems.some(v => v !== 0)) {
+        if (!confirm('Reset all systems? This will clear all probes and subjugated systems.')) return;
+    }
+    if (fullRefresh) fullRefreshList();
     refresh();
 }
 
 function undo() {
-    if (probeHistory.length == 0) return;
-    var i = probeHistory[probeHistory.length - 1];
-    probeHistory.pop();
+    if (probeHistory.length === 0) return;
+    const i = probeHistory.pop();
     shownListItems[i] = 0;
+    saveCookie();
     refresh();
 }
 
 function removeSystem(systemI) {
-    shownListItems[systemI] = 2;//Sets this to 2 to stop it from being displayed
-    probeHistory.push(systemI);//Adds the removed systems to history.
+    shownListItems[systemI] = 2;
+    probeHistory.push(systemI);
     saveCookie();
     refresh();
 }
 
 function toggleSubjugate(systemI) {
-    if (shownListItems[systemI] == 0)
-        shownListItems[systemI] = 1;
-    else
-        shownListItems[systemI] = 0;
+    shownListItems[systemI] = shownListItems[systemI] === 0 ? 1 : 0;
     saveCookie();
     refresh();
 }
 
 window.onload = function() {
-    var acceptButton = document.getElementById('cookie-accept');
-    var declineButton = document.getElementById('cookie-decline');
-    var cookieBanner = document.getElementById('cookie-banner');
+    const acceptButton  = document.getElementById('cookie-accept');
+    const declineButton = document.getElementById('cookie-decline');
+    const cookieBanner  = document.getElementById('cookie-banner');
 
-    // Check if user has already made a choice
     if (!getCookie('cookie_consent')) {
-        cookieBanner.style.display = 'block'; // Show banner if no choice made
+        cookieBanner.style.display = 'block';
     }
 
     acceptButton.onclick = function() {
         setCookie('cookie_consent', 'accepted', 365);
         cookieBanner.style.display = 'none';
-        // Insert your analytics script here if the user has accepted cookies
-    }
+    };
 
     declineButton.onclick = function() {
         setCookie('cookie_consent', 'declined', 365);
         cookieBanner.style.display = 'none';
-        // Do not insert analytics script if the user has declined cookies
-    }
-}
+    };
+};
 
 function setCookie(name, value, days) {
-    var expires = "";
+    let expires = '';
     if (days) {
-        var date = new Date();
-        date.setTime(date.getTime() + (days*24*60*60*1000));
-        expires = "; expires=" + date.toUTCString();
+        const date = new Date();
+        date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+        expires = '; expires=' + date.toUTCString();
     }
-    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    document.cookie = name + '=' + (value || '') + expires + '; path=/';
 }
 
 function getCookie(name) {
-    var nameEQ = name + "=";
-    var ca = document.cookie.split(';');
-    for(var i=0;i < ca.length;i++) {
-        var c = ca[i];
-        while (c.charAt(0)==' ') c = c.substring(1,c.length);
-        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    const nameEQ = name + '=';
+    const ca = document.cookie.split(';');
+    for (let c of ca) {
+        c = c.trim();
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length);
     }
     return null;
 }

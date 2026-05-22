@@ -25,7 +25,7 @@
     <meta property="twitter:image" content="icons/android-chrome-512x512.png">
 
 
-    <script scr="register-sw.js"></script>
+    <script src="register-sw.js"></script>
     <!-- CSS Reset -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
 
@@ -82,32 +82,27 @@ gtag('consent', 'default', {
             <section class="container">
                 <a class="navigation-title hidden-mobile" href="#">Probe Tracker</a>
                 <ul class="navigation-list float-right" style="margin-right: 0px;">
-                    <li class="navigation-item navigation-link float-right" href="#" onclick="" data-popover="" id="sortText">Alphabet Sort</li>
-                    <li class="navigation-item navigation-link float-right" href="#" onclick="refreshSystems()" data-popover="">Reset
-                        Systems</li>
-                    <li class="navigation-item navigation-link float-right" href="#" onclick="undo()" data-popover="">Undo</li>
+                    <li class="navigation-item navigation-link float-right" onclick="refreshSystems()">Reset</li>
+                    <li class="navigation-item navigation-link float-right" onclick="undo()">Undo</li>
                 </ul>
             </section>
         </nav>
         <section class="container">
-            <dl id="secondNav">
-                <dt>
-                    <button class="sortButton button float-centre active" id="alphabet" onclick="changeSort(0)">Alphabet Sort</button>
-                    <button class="sortButton button float-centre" id="region" onclick="changeSort(1)">Region Sort</button>
-                    <button class="sortButton button float-centre" id="conquer" onclick="changeSort(2)">Conquer Sort</button>
-                    <button class="sortButton button float-centre" id="risk" onclick="changeSort(3)">Risk Sort</button>
-                </dt>
-            </dl>
+            <div class="sort-bar">
+                <button class="sortButton active" id="alphabet" onclick="changeSort(0)">Alphabet</button>
+                <button class="sortButton" id="region" onclick="changeSort(1)">Region</button>
+                <button class="sortButton" id="conquer" onclick="changeSort(2)">Conquer</button>
+                <button class="sortButton" id="risk" onclick="changeSort(3)">Risk</button>
+            </div>
+            <div id="stats-bar" class="stats-bar"></div>
             <div id="notification" class="notification"></div>
             <div class="search-container">
                 <input type="text" id="searchInput" onkeyup="searchFunction()" placeholder="Search for systems.." title="Type in a system">
                 <button id="clearButton" onclick="clearSearch()">X</button>
             </div>
-            <dl id="SystemList">
-            </dl>
-            <h3 style="margin:auto; text-align:center;">Subjugated Systems</h3>
-            <dl id="SubjugatedSystemList">
-            </dl>
+            <div id="SystemList" class="system-list"></div>
+            <h3 class="subjugated-heading">Subjugated Systems</h3>
+            <div id="SubjugatedSystemList" class="system-list"></div>
         </section>
         <script src="js/systems.js"></script>
         <div id="cookie-banner" class="cookie-banner">

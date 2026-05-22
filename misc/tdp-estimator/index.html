@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Handheld TDP &amp; Battery Estimator</title>
+    <meta name="description" content="Visual TDP and battery life estimator for handheld Linux gaming devices. Find the efficiency sweet spot for your Steam Deck, ROG Ally, Legion Go, and more.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0c10;
+            --surface: #13161e;
+            --surface2: #1a1e2a;
+            --border: #252c3a;
+            --text: #e2e8f0;
+            --muted: #6b7899;
+            --accent: #9b4dca;
+            --accent-dim: rgba(155,77,202,0.13);
+            --accent-border: rgba(155,77,202,0.36);
+            --green: #22c55e;
+            --blue: #3b82f6;
+            --amber: #f59e0b;
+            --red: #ef4444;
+            --mono: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* ── Topbar ── */
+        .topbar {
+            height: 52px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
+            gap: 0.75rem;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .topbar-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .topbar-back:hover { color: var(--text); }
+        .topbar-sep { color: var(--border); }
+        .topbar-title { font-size: 0.9rem; font-weight: 600; }
+        .topbar-tag {
+            margin-left: auto;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        /* ── Layout ── */
+        .workspace {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            min-height: calc(100vh - 52px);
+        }
+
+        @media (max-width: 860px) {
+            .workspace { grid-template-columns: 1fr; }
+        }
+
+        /* ── Controls sidebar ── */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 860px) {
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                overflow-y: visible;
+            }
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 0.65rem; }
+
+        .control-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* ── Device chips ── */
+        .device-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.45rem;
+        }
+
+        .device-chip {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 0.6rem 0.75rem;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            text-align: left;
+        }
+        .device-chip.selected {
+            background: var(--accent-dim);
+            border-color: var(--accent-border);
+        }
+        .device-chip-name {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text);
+            display: block;
+        }
+        .device-chip.selected .device-chip-name { color: var(--accent); }
+        .device-chip-sub {
+            font-size: 0.68rem;
+            color: var(--muted);
+            font-family: var(--mono);
+            margin-top: 0.1rem;
+        }
+
+        /* ── Profile chips ── */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.45rem;
+        }
+
+        .profile-chip {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 0.55rem 0.75rem;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .profile-chip-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text);
+            display: block;
+        }
+        .profile-chip-example {
+            font-size: 0.68rem;
+            color: var(--muted);
+            margin-top: 0.1rem;
+            line-height: 1.3;
+        }
+
+        /* ── TDP slider ── */
+        .tdp-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+
+        .tdp-value {
+            font-family: var(--mono);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .tdp-range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            margin-top: 0.25rem;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 5px;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+            margin: 0.4rem 0;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(155,77,202,0.2);
+            transition: box-shadow 0.15s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 0 5px rgba(155,77,202,0.25);
+        }
+
+        input[type=range]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            cursor: pointer;
+        }
+
+        /* ── Frame cap buttons ── */
+        .cap-grid {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .cap-btn {
+            padding: 0.38rem 0.75rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: var(--mono);
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .cap-btn.selected {
+            background: var(--accent-dim);
+            border-color: var(--accent-border);
+            color: var(--accent);
+        }
+
+        /* ── Main area ── */
+        .main {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+            overflow-y: auto;
+        }
+
+        /* ── Stat cards ── */
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 480px) {
+            .stat-row { grid-template-columns: 1fr 1fr; }
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.9rem 1rem;
+        }
+
+        .stat-card-label {
+            font-size: 0.64rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-card-value {
+            font-family: var(--mono);
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .stat-card-sub {
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin-top: 0.3rem;
+        }
+
+        /* ── Chart card ── */
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1rem 1rem 0.75rem;
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .chart-title {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        .legend-line {
+            width: 20px;
+            height: 2px;
+            border-radius: 1px;
+            flex-shrink: 0;
+        }
+
+        .legend-dashed { border-top: 2px dashed; height: 0; }
+
+        .chart-wrap {
+            position: relative;
+            height: 260px;
+        }
+
+        @media (max-width: 560px) {
+            .chart-wrap { height: 200px; }
+        }
+
+        /* ── Analysis card ── */
+        .analysis-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.1rem 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .analysis-title {
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.65rem;
+        }
+
+        @media (max-width: 560px) {
+            .analysis-grid { grid-template-columns: 1fr; }
+        }
+
+        .analysis-item {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.8rem 0.9rem;
+        }
+
+        .analysis-item-label {
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.35rem;
+        }
+
+        .analysis-item-value {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .highlight-green  { color: var(--green);  font-weight: 600; }
+        .highlight-blue   { color: var(--blue);   font-weight: 600; }
+        .highlight-amber  { color: var(--amber);  font-weight: 600; }
+        .highlight-red    { color: var(--red);    font-weight: 600; }
+        .highlight-accent { color: var(--accent); font-weight: 600; }
+
+        /* ── Tradeoff table ── */
+        .tradeoff-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+            font-family: var(--mono);
+        }
+
+        .tradeoff-table th {
+            text-align: left;
+            font-size: 0.64rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding: 0 0.5rem 0.55rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tradeoff-table td {
+            padding: 0.42rem 0.5rem;
+            color: var(--text);
+            border-bottom: 1px solid rgba(37,44,58,0.5);
+        }
+
+        .tradeoff-table tr.active-row td {
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        .tradeoff-table tr.active-row td:first-child {
+            border-radius: 5px 0 0 5px;
+        }
+        .tradeoff-table tr.active-row td:last-child {
+            border-radius: 0 5px 5px 0;
+        }
+
+        .td-gain-good  { color: var(--green); }
+        .td-gain-ok    { color: var(--amber); }
+        .td-gain-poor  { color: var(--red);   }
+
+        /* ── Disclaimer ── */
+        .disclaimer {
+            font-size: 0.72rem;
+            color: var(--muted);
+            text-align: center;
+            padding: 0.5rem 0 0.25rem;
+            line-height: 1.5;
+        }
+
+        /* ── Not achievable badge ── */
+        .badge {
+            display: inline-block;
+            font-size: 0.66rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-radius: 4px;
+            padding: 0.15rem 0.48rem;
+        }
+        .badge-red    { background: rgba(239,68,68,0.12);  color: var(--red);   border: 1px solid rgba(239,68,68,0.3);  }
+        .badge-green  { background: rgba(34,197,94,0.12);  color: var(--green); border: 1px solid rgba(34,197,94,0.3);  }
+        .badge-amber  { background: rgba(245,158,11,0.12); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <a href="/" class="topbar-back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Home
+    </a>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-title">TDP &amp; Battery Estimator</span>
+    <span class="topbar-tag">Handheld Linux Gaming</span>
+</div>
+
+<div class="workspace">
+
+    <!-- ── Controls ── -->
+    <aside class="sidebar">
+
+        <div class="control-group">
+            <p class="control-label">Device</p>
+            <div class="device-grid" id="device-grid"></div>
+        </div>
+
+        <div class="control-group">
+            <p class="control-label">Game Profile</p>
+            <div class="profile-grid" id="profile-grid"></div>
+        </div>
+
+        <div class="control-group">
+            <div class="tdp-header">
+                <p class="control-label">TDP Limit</p>
+                <span class="tdp-value" id="tdp-display">15W</span>
+            </div>
+            <input type="range" id="tdp-slider" min="1" max="30" step="1" value="15">
+            <div class="tdp-range-labels">
+                <span id="tdp-min-label">1W</span>
+                <span id="tdp-max-label">30W</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <p class="control-label">Frame Cap</p>
+            <div class="cap-grid" id="cap-grid"></div>
+        </div>
+
+    </aside>
+
+    <!-- ── Main ── -->
+    <main class="main">
+
+        <div class="stat-row">
+            <div class="stat-card">
+                <p class="stat-card-label">Est. FPS</p>
+                <p class="stat-card-value" id="stat-fps">—</p>
+                <p class="stat-card-sub" id="stat-fps-sub"></p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-card-label">Battery Life</p>
+                <p class="stat-card-value" id="stat-bat">—</p>
+                <p class="stat-card-sub" id="stat-bat-sub"></p>
+            </div>
+            <div class="stat-card" id="stat-eff-card">
+                <p class="stat-card-label">Efficiency</p>
+                <p class="stat-card-value" id="stat-eff">—</p>
+                <p class="stat-card-sub" id="stat-eff-sub"></p>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <span class="chart-title">Performance &amp; Battery vs TDP</span>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-line" style="background:#9b4dca"></div>
+                        <span>FPS (left)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line legend-dashed" style="border-color:#3b82f6; width:20px"></div>
+                        <span>Battery (right)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="chart"></canvas>
+            </div>
+        </div>
+
+        <div class="analysis-card">
+            <p class="analysis-title">Tradeoff Analysis</p>
+            <div class="analysis-grid">
+                <div class="analysis-item">
+                    <p class="analysis-item-label">Frame Cap Status</p>
+                    <p class="analysis-item-value" id="cap-status">—</p>
+                </div>
+                <div class="analysis-item">
+                    <p class="analysis-item-label">Efficiency Sweet Spot</p>
+                    <p class="analysis-item-value" id="sweet-spot">—</p>
+                </div>
+                <div class="analysis-item">
+                    <p class="analysis-item-label">Marginal Return (+5W)</p>
+                    <p class="analysis-item-value" id="marginal">—</p>
+                </div>
+                <div class="analysis-item">
+                    <p class="analysis-item-label">System Draw (total)</p>
+                    <p class="analysis-item-value" id="sys-draw">—</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <span class="chart-title">FPS Gain per Watt — Diminishing Returns</span>
+            </div>
+            <div style="overflow-x:auto">
+                <table class="tradeoff-table" id="tradeoff-table">
+                    <thead>
+                        <tr>
+                            <th>TDP</th>
+                            <th>Est. FPS</th>
+                            <th>Battery</th>
+                            <th>+1W yields</th>
+                            <th>FPS/W</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tradeoff-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <p class="disclaimer">Estimates derived from community benchmarks and power profiles. Actual results vary by game, graphical settings, and ambient temperature. Overhead includes display, memory, storage, WiFi, and fan consumption at mid-brightness.</p>
+
+    </main>
+</div>
+
+<script>
+/* ── Device data ── */
+const DEVICES = [
+    { id: 'deck-lcd',  name: 'Steam Deck',  sub: 'LCD · 40Wh',   battery: 40,    tdpMin: 1,  tdpMax: 15, tdpDef: 9,  overhead: 5.5, gpuScale: 1.00 },
+    { id: 'deck-oled', name: 'Steam Deck',  sub: 'OLED · 50Wh',  battery: 50,    tdpMin: 1,  tdpMax: 15, tdpDef: 10, overhead: 5.0, gpuScale: 1.00 },
+    { id: 'ally',      name: 'ROG Ally',    sub: 'Z1E · 40Wh',   battery: 40,    tdpMin: 5,  tdpMax: 25, tdpDef: 15, overhead: 7.5, gpuScale: 1.45 },
+    { id: 'ally-x',    name: 'ROG Ally X',  sub: 'Z1E · 80Wh',   battery: 80,    tdpMin: 5,  tdpMax: 25, tdpDef: 15, overhead: 8.0, gpuScale: 1.45 },
+    { id: 'legion-go', name: 'Legion Go',   sub: 'Z1E · 49Wh',   battery: 49.2,  tdpMin: 5,  tdpMax: 30, tdpDef: 15, overhead: 8.5, gpuScale: 1.42 },
+    { id: 'gpd-win4',  name: 'GPD Win 4',   sub: '7840U · 46Wh', battery: 45.6,  tdpMin: 5,  tdpMax: 20, tdpDef: 12, overhead: 6.5, gpuScale: 1.38 },
+    { id: 'ayaneo',    name: 'Ayaneo 2S',   sub: '7840U · 50Wh', battery: 50.25, tdpMin: 5,  tdpMax: 25, tdpDef: 15, overhead: 8.0, gpuScale: 1.38 },
+];
+
+/* ── Game profiles ── */
+/* satW = TDP at which the base Van Gogh chip reaches 95% of maxFps for this workload.
+   More capable devices (gpuScale > 1) reach saturation at lower TDP: adjusted_satW = satW / gpuScale */
+const PROFILES = [
+    { id: 'light', name: 'Lightweight', example: 'Stardew Valley, Hades', satW: 6,  maxFps: 90, baseFps: 22 },
+    { id: 'aa',    name: 'AA / Mid',    example: 'Deep Rock, Elden Ring',  satW: 14, maxFps: 60, baseFps: 10 },
+    { id: 'aaa',   name: 'AAA',         example: 'Cyberpunk, Hogwarts',    satW: 28, maxFps: 55, baseFps: 5  },
+    { id: 'emu',   name: 'Emulation',   example: 'PS3/Switch (EmuDeck)',   satW: 11, maxFps: 60, baseFps: 16 },
+];
+
+const CAPS = [
+    { fps: 30, label: '30' },
+    { fps: 40, label: '40' },
+    { fps: 45, label: '45' },
+    { fps: 60, label: '60' },
+    { fps: null, label: 'Uncapped' },
+];
+
+/* ── State ── */
+const state = {
+    deviceId:  'deck-oled',
+    profileId: 'aa',
+    tdp:       10,
+    cap:       60,
+};
+
+function device()  { return DEVICES.find(function(d) { return d.id === state.deviceId; }); }
+function profile() { return PROFILES.find(function(p) { return p.id === state.profileId; }); }
+
+/* ── Model ── */
+function estimateFPS(tdp, dev, prof) {
+    var adjSatW = prof.satW / dev.gpuScale;
+    var range = Math.max(1, adjSatW - dev.tdpMin);
+    var x = Math.max(0, tdp - dev.tdpMin) / range;
+    var fps = prof.baseFps + (prof.maxFps - prof.baseFps) * (1 - Math.exp(-3 * x));
+    return Math.min(prof.maxFps, fps);
+}
+
+function estimateBatH(tdp, dev) {
+    return dev.battery / (tdp + dev.overhead);
+}
+
+/* TDP needed to reach a given frame rate; null if unachievable within device max */
+function tdpForFPS(targetFps, dev, prof) {
+    if (targetFps <= prof.baseFps) return dev.tdpMin;
+    var ratio = (targetFps - prof.baseFps) / (prof.maxFps - prof.baseFps);
+    if (ratio >= 1) return null;
+    var adjSatW = prof.satW / dev.gpuScale;
+    var range = Math.max(1, adjSatW - dev.tdpMin);
+    var x = -Math.log(1 - ratio) / 3;
+    var tdp = x * range + dev.tdpMin;
+    if (tdp > dev.tdpMax) return null;
+    return tdp;
+}
+
+/* TDP where FPS/W efficiency is highest above a 28-fps playable floor */
+function sweetSpotTdp(dev, prof) {
+    var best = { tdp: dev.tdpMin, val: 0 };
+    for (var t = dev.tdpMin; t <= dev.tdpMax; t += 0.5) {
+        var fps = estimateFPS(t, dev, prof);
+        if (fps < 28) continue;
+        var eff = fps / (t + dev.overhead);
+        if (eff > best.val) { best.val = eff; best.tdp = t; }
+    }
+    return best.tdp;
+}
+
+/* ── Chart ── */
+var chart = null;
+
+function buildDatasets(dev, prof) {
+    var fps = [], bat = [];
+    for (var t = dev.tdpMin; t <= dev.tdpMax; t += 0.25) {
+        fps.push({ x: t, y: Math.round(estimateFPS(t, dev, prof) * 10) / 10 });
+        bat.push({ x: t, y: Math.round(estimateBatH(t, dev) * 100) / 100 });
+    }
+    return { fps: fps, bat: bat };
+}
+
+var tdpMarkerPlugin = {
+    id: 'tdpMarker',
+    afterDraw: function(ch) {
+        var ctx = ch.ctx;
+        var ca  = ch.chartArea;
+        var sc  = ch.scales;
+        if (!sc.x) return;
+
+        /* vertical TDP line */
+        var xPx = sc.x.getPixelForValue(state.tdp);
+        if (xPx >= ca.left && xPx <= ca.right) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(xPx, ca.top);
+            ctx.lineTo(xPx, ca.bottom);
+            ctx.strokeStyle = 'rgba(155,77,202,0.8)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 4]);
+            ctx.stroke();
+            ctx.fillStyle = '#9b4dca';
+            ctx.font = '600 10px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(state.tdp + 'W', xPx, ca.top - 6);
+            ctx.restore();
+        }
+
+        /* frame cap horizontal line */
+        if (state.cap !== null && sc.fps) {
+            var yPx = sc.fps.getPixelForValue(state.cap);
+            if (yPx >= ca.top && yPx <= ca.bottom) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(ca.left, yPx);
+                ctx.lineTo(ca.right, yPx);
+                ctx.strokeStyle = 'rgba(245,158,11,0.65)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(245,158,11,0.85)';
+                ctx.font = '10px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(state.cap + ' fps cap', ca.right - 4, yPx - 4);
+                ctx.restore();
+            }
+        }
+    }
+};
+
+function initChart() {
+    Chart.defaults.color = '#6b7899';
+    Chart.defaults.borderColor = '#252c3a';
+
+    var ctx = document.getElementById('chart').getContext('2d');
+    var dev = device(), prof = profile();
+    var ds = buildDatasets(dev, prof);
+    var maxBat = Math.ceil(estimateBatH(dev.tdpMin, dev) + 0.5);
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [
+                {
+                    label: 'FPS',
+                    data: ds.fps,
+                    yAxisID: 'fps',
+                    borderColor: '#9b4dca',
+                    backgroundColor: 'rgba(155,77,202,0.07)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    borderWidth: 2.5,
+                },
+                {
+                    label: 'Battery (h)',
+                    data: ds.bat,
+                    yAxisID: 'battery',
+                    borderColor: '#3b82f6',
+                    borderDash: [5, 4],
+                    tension: 0.4,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 250 },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a1e2a',
+                    borderColor: '#252c3a',
+                    borderWidth: 1,
+                    titleColor: '#e2e8f0',
+                    bodyColor: '#6b7899',
+                    padding: 10,
+                    callbacks: {
+                        title: function(items) { return items[0].parsed.x.toFixed(1) + 'W TDP'; },
+                        label: function(item) {
+                            if (item.dataset.label === 'FPS') {
+                                return '  FPS: ~' + Math.round(item.parsed.y);
+                            }
+                            return '  Battery: ' + item.parsed.y.toFixed(1) + 'h';
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    min: dev.tdpMin,
+                    max: dev.tdpMax,
+                    title: { display: true, text: 'TDP (W)', font: { size: 11 } },
+                    ticks: { font: { family: 'JetBrains Mono', size: 11 } },
+                },
+                fps: {
+                    type: 'linear',
+                    position: 'left',
+                    min: 0,
+                    max: prof.maxFps + 10,
+                    title: { display: true, text: 'Est. FPS', font: { size: 11 } },
+                    ticks: { font: { family: 'JetBrains Mono', size: 11 } },
+                },
+                battery: {
+                    type: 'linear',
+                    position: 'right',
+                    min: 0,
+                    max: maxBat,
+                    title: { display: true, text: 'Battery (h)', font: { size: 11 } },
+                    ticks: { font: { family: 'JetBrains Mono', size: 11 } },
+                    grid: { drawOnChartArea: false },
+                },
+            },
+        },
+        plugins: [tdpMarkerPlugin],
+    });
+}
+
+function updateChart() {
+    if (!chart) return;
+    var dev = device(), prof = profile();
+    var ds = buildDatasets(dev, prof);
+    var maxBat = Math.ceil(estimateBatH(dev.tdpMin, dev) + 0.5);
+
+    chart.data.datasets[0].data = ds.fps;
+    chart.data.datasets[1].data = ds.bat;
+    chart.options.scales.x.min = dev.tdpMin;
+    chart.options.scales.x.max = dev.tdpMax;
+    chart.options.scales.fps.max = prof.maxFps + 10;
+    chart.options.scales.battery.max = maxBat;
+    chart.update('none');
+}
+
+/* ── Slider fill ── */
+function updateSliderFill() {
+    var dev = device();
+    var slider = document.getElementById('tdp-slider');
+    var pct = ((state.tdp - dev.tdpMin) / (dev.tdpMax - dev.tdpMin)) * 100;
+    slider.style.background =
+        'linear-gradient(to right, #9b4dca ' + pct + '%, #252c3a ' + pct + '%)';
+}
+
+/* ── Stats ── */
+function fmtBat(h) {
+    var hrs = Math.floor(h);
+    var mins = Math.round((h - hrs) * 60);
+    if (hrs === 0) return mins + 'm';
+    if (mins === 0) return hrs + 'h';
+    return hrs + 'h ' + mins + 'm';
+}
+
+function updateStats() {
+    var dev = device(), prof = profile();
+    var fps = estimateFPS(state.tdp, dev, prof);
+    var fpsCapped = state.cap !== null ? Math.min(fps, state.cap) : fps;
+    var bat = estimateBatH(state.tdp, dev);
+    var totalW = state.tdp + dev.overhead;
+    var eff = fpsCapped / totalW;
+
+    /* FPS card */
+    document.getElementById('stat-fps').textContent = '~' + Math.round(fpsCapped);
+    var capNote = state.cap !== null
+        ? (fps >= state.cap ? 'cap met at ' + state.tdp + 'W' : 'native ~' + Math.round(fps) + ' fps')
+        : 'uncapped';
+    document.getElementById('stat-fps-sub').textContent = capNote;
+
+    /* Battery card */
+    document.getElementById('stat-bat').textContent = fmtBat(bat);
+    document.getElementById('stat-bat-sub').textContent = totalW.toFixed(1) + 'W total draw';
+
+    /* Efficiency card */
+    var effLabel, effColor, effSub;
+    if (eff > 3.0) { effLabel = 'Great';  effColor = '#22c55e'; }
+    else if (eff > 2.0) { effLabel = 'Good';   effColor = '#3b82f6'; }
+    else if (eff > 1.2) { effLabel = 'Fair';   effColor = '#f59e0b'; }
+    else                { effLabel = 'Poor';   effColor = '#ef4444'; }
+
+    document.getElementById('stat-eff').textContent = effLabel;
+    document.getElementById('stat-eff').style.color = effColor;
+    document.getElementById('stat-eff-sub').textContent =
+        (fpsCapped / totalW).toFixed(1) + ' FPS/W';
+}
+
+/* ── Analysis ── */
+function updateAnalysis() {
+    var dev = device(), prof = profile();
+    var fps = estimateFPS(state.tdp, dev, prof);
+    var bat = estimateBatH(state.tdp, dev);
+
+    /* Cap status */
+    var capEl = document.getElementById('cap-status');
+    if (state.cap === null) {
+        capEl.innerHTML = '<span class="highlight-accent">Uncapped</span> &mdash; ~' +
+            Math.round(fps) + ' fps at ' + state.tdp + 'W';
+    } else {
+        var fpsAtMax = estimateFPS(dev.tdpMax, dev, prof);
+        if (state.cap > fpsAtMax) {
+            capEl.innerHTML = '<span class="badge badge-red">' + state.cap + ' fps not achievable</span>' +
+                '<br><span style="font-size:0.8rem;color:var(--muted);margin-top:0.3rem;display:block">' +
+                'Max on this device ~' + Math.round(fpsAtMax) + ' fps at ' + dev.tdpMax + 'W</span>';
+        } else {
+            var tdpNeeded = tdpForFPS(state.cap, dev, prof);
+            var batAtCap = estimateBatH(tdpNeeded, dev);
+            capEl.innerHTML = '<span class="badge badge-green">' + state.cap + ' fps achievable</span>' +
+                '<br><span style="font-size:0.8rem;color:var(--muted);margin-top:0.3rem;display:block">' +
+                'Needs ~' + tdpNeeded.toFixed(1) + 'W → ' + fmtBat(batAtCap) + ' battery</span>';
+        }
+    }
+
+    /* Sweet spot */
+    var sweet = sweetSpotTdp(dev, prof);
+    var sweetFps = estimateFPS(sweet, dev, prof);
+    var sweetBat = estimateBatH(sweet, dev);
+    var sweetEl = document.getElementById('sweet-spot');
+    sweetEl.innerHTML = '<span class="highlight-green">' + sweet.toFixed(1) + 'W</span>' +
+        ' → ~' + Math.round(sweetFps) + ' fps, ' + fmtBat(sweetBat) + ' battery' +
+        '<br><span style="font-size:0.75rem;color:var(--muted)">Best FPS/W above playable floor</span>';
+
+    /* Marginal return (+5W from current) */
+    var step = 5;
+    var tdpPlus = Math.min(dev.tdpMax, state.tdp + step);
+    var actualStep = tdpPlus - state.tdp;
+    var fpsPlus = estimateFPS(tdpPlus, dev, prof);
+    var batPlus = estimateBatH(tdpPlus, dev);
+    var fpsDelta = fpsPlus - fps;
+    var batDeltaMin = (batPlus - bat) * 60;
+    var margEl = document.getElementById('marginal');
+    if (actualStep < 0.5) {
+        margEl.textContent = 'Already at device maximum TDP.';
+    } else {
+        var fpsDeltaStr = '+' + Math.round(fpsDelta) + ' fps';
+        var batStr = Math.round(Math.abs(batDeltaMin)) + ' min ' + (batDeltaMin < 0 ? 'less' : 'more');
+        var gainClass = fpsDelta >= 8 ? 'highlight-green' : fpsDelta >= 4 ? 'highlight-amber' : 'highlight-red';
+        margEl.innerHTML =
+            '+' + actualStep + 'W → <span class="' + gainClass + '">' + fpsDeltaStr + '</span>' +
+            ', <span style="color:var(--red)">' + batStr + ' battery</span>' +
+            (fpsDelta < 3 ? '<br><span style="font-size:0.75rem;color:var(--muted)">Diminishing returns zone</span>' : '');
+    }
+
+    /* System draw */
+    var drawEl = document.getElementById('sys-draw');
+    drawEl.innerHTML =
+        '<span class="highlight-accent">' + (state.tdp + dev.overhead).toFixed(1) + 'W</span> total' +
+        '<br><span style="font-size:0.75rem;color:var(--muted)">' +
+        state.tdp + 'W APU + ' + dev.overhead + 'W overhead (display, RAM, NVMe, fans)</span>';
+}
+
+/* ── Tradeoff table ── */
+function updateTable() {
+    var dev = device(), prof = profile();
+    var tbody = document.getElementById('tradeoff-body');
+    tbody.innerHTML = '';
+
+    var step = dev.tdpMax <= 15 ? 1 : 2;
+    for (var t = dev.tdpMin; t <= dev.tdpMax; t += step) {
+        var fps  = estimateFPS(t, dev, prof);
+        var bat  = estimateBatH(t, dev);
+        var next = Math.min(dev.tdpMax, t + 1);
+        var margFps = estimateFPS(next, dev, prof) - fps;
+        var effVal  = fps / (t + dev.overhead);
+
+        var gainClass = margFps >= 4 ? 'td-gain-good' : margFps >= 2 ? 'td-gain-ok' : 'td-gain-poor';
+        var isActive  = Math.abs(t - state.tdp) < step * 0.5;
+
+        var tr = document.createElement('tr');
+        if (isActive) tr.className = 'active-row';
+        tr.innerHTML =
+            '<td>' + t + 'W</td>' +
+            '<td>~' + Math.round(fps) + '</td>' +
+            '<td>' + fmtBat(bat) + '</td>' +
+            '<td class="' + gainClass + '">' + (margFps >= 0.5 ? '+' + Math.round(margFps * 10) / 10 : '<1') + '</td>' +
+            '<td>' + effVal.toFixed(1) + '</td>';
+        tbody.appendChild(tr);
+    }
+}
+
+/* ── Render chips ── */
+function renderDevices() {
+    var grid = document.getElementById('device-grid');
+    grid.innerHTML = '';
+    DEVICES.forEach(function(dev) {
+        var btn = document.createElement('button');
+        btn.className = 'device-chip' + (dev.id === state.deviceId ? ' selected' : '');
+        btn.innerHTML =
+            '<span class="device-chip-name">' + dev.name + '</span>' +
+            '<span class="device-chip-sub">' + dev.sub + '</span>';
+        btn.addEventListener('click', function() {
+            state.deviceId = dev.id;
+            var d = device();
+            state.tdp = Math.min(Math.max(state.tdp, d.tdpMin), d.tdpMax);
+            if (state.tdp < d.tdpMin) state.tdp = d.tdpDef;
+            var slider = document.getElementById('tdp-slider');
+            slider.min = d.tdpMin;
+            slider.max = d.tdpMax;
+            slider.value = state.tdp;
+            document.getElementById('tdp-min-label').textContent = d.tdpMin + 'W';
+            document.getElementById('tdp-max-label').textContent = d.tdpMax + 'W';
+            document.getElementById('tdp-display').textContent = state.tdp + 'W';
+            renderDevices();
+            updateAll();
+        });
+        grid.appendChild(btn);
+    });
+}
+
+function renderProfiles() {
+    var grid = document.getElementById('profile-grid');
+    grid.innerHTML = '';
+    PROFILES.forEach(function(prof) {
+        var btn = document.createElement('button');
+        btn.className = 'profile-chip' + (prof.id === state.profileId ? ' selected' : '');
+        btn.innerHTML =
+            '<span class="profile-chip-name">' + prof.name + '</span>' +
+            '<span class="profile-chip-example">' + prof.example + '</span>';
+        btn.addEventListener('click', function() {
+            state.profileId = prof.id;
+            renderProfiles();
+            updateAll();
+        });
+        grid.appendChild(btn);
+    });
+}
+
+function renderCaps() {
+    var grid = document.getElementById('cap-grid');
+    grid.innerHTML = '';
+    CAPS.forEach(function(cap) {
+        var btn = document.createElement('button');
+        btn.className = 'cap-btn' + (cap.fps === state.cap ? ' selected' : '');
+        btn.textContent = cap.label;
+        btn.addEventListener('click', function() {
+            state.cap = cap.fps;
+            renderCaps();
+            updateAll();
+        });
+        grid.appendChild(btn);
+    });
+}
+
+/* ── Full update ── */
+function updateAll() {
+    updateSliderFill();
+    updateStats();
+    updateAnalysis();
+    updateTable();
+    updateChart();
+}
+
+/* ── TDP slider ── */
+var slider = document.getElementById('tdp-slider');
+slider.addEventListener('input', function() {
+    state.tdp = parseFloat(this.value);
+    document.getElementById('tdp-display').textContent = state.tdp + 'W';
+    updateAll();
+});
+
+/* ── Init ── */
+(function init() {
+    var dev = device();
+    slider.min = dev.tdpMin;
+    slider.max = dev.tdpMax;
+    slider.value = state.tdp;
+    document.getElementById('tdp-min-label').textContent = dev.tdpMin + 'W';
+    document.getElementById('tdp-max-label').textContent = dev.tdpMax + 'W';
+    document.getElementById('tdp-display').textContent = state.tdp + 'W';
+
+    renderDevices();
+    renderProfiles();
+    renderCaps();
+    initChart();
+    updateAll();
+})();
+</script>
+</body>
+</html>
