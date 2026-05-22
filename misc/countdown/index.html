@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Until we're together</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400&display=swap"
+        rel="stylesheet">
+
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'DM Sans', system-ui, sans-serif;
+            min-height: 100dvh;
+            background: #FBF4EE;
+            color: #2C1A10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: max(2.5rem, env(safe-area-inset-top)) 1.5rem max(2rem, env(safe-area-inset-bottom));
+            text-align: center;
+            /* Subtle warm radial glow */
+            background-image:
+                radial-gradient(ellipse 80% 60% at 50% 0%, rgba(220, 150, 140, 0.18) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 50% at 50% 100%, rgba(180, 110, 100, 0.12) 0%, transparent 70%);
+        }
+
+        .page {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        /* ── Header ── */
+        .header {
+            margin-bottom: 3rem;
+        }
+
+        .eyebrow {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 400;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #B5727A;
+            margin-bottom: 1rem;
+        }
+
+        .headline {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(2.6rem, 10vw, 3.6rem);
+            font-weight: 300;
+            line-height: 1.15;
+            color: #2C1A10;
+            margin-bottom: 0.7rem;
+        }
+
+        .headline em {
+            font-style: italic;
+            color: #B5727A;
+        }
+
+        .subline {
+            font-size: 0.9rem;
+            font-weight: 300;
+            color: #9A7060;
+            letter-spacing: 0.02em;
+        }
+
+        /* ── Primary card ── */
+        .primary-card {
+            background: rgba(255, 250, 246, 0.85);
+            border: 1px solid rgba(180, 110, 100, 0.18);
+            border-radius: 24px;
+            padding: 2.4rem 1.8rem 2rem;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 4px 32px rgba(180, 100, 90, 0.07), 0 1px 4px rgba(180, 100, 90, 0.06);
+        }
+
+        .card-eyebrow {
+            font-size: 0.68rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #B5727A;
+            font-weight: 400;
+            margin-bottom: 1.8rem;
+        }
+
+        /* ── Countdown numbers ── */
+        .countdown-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.4rem;
+            margin-bottom: 1.6rem;
+        }
+
+        .unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .number {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(3rem, 12vw, 4.5rem);
+            font-weight: 600;
+            line-height: 1;
+            color: #2C1A10;
+            letter-spacing: -0.02em;
+            min-width: 2ch;
+        }
+
+        .unit-label {
+            font-size: 0.62rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #B0887A;
+            font-weight: 400;
+        }
+
+        .dividers {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.4rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .unit-divider {
+            height: 1px;
+            background: rgba(180, 110, 100, 0.15);
+        }
+
+        .date-label {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.1rem;
+            font-style: italic;
+            font-weight: 300;
+            color: #B5727A;
+        }
+
+        /* ── Secondary card ── */
+        .and-then {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-style: italic;
+            font-size: 1rem;
+            color: #B0887A;
+            margin-bottom: 0.8rem;
+            font-weight: 300;
+        }
+
+        .secondary-card {
+            background: rgba(255, 250, 246, 0.55);
+            border: 1px solid rgba(180, 110, 100, 0.12);
+            border-radius: 18px;
+            padding: 1.4rem 1.6rem 1.2rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .secondary-row {
+            display: flex;
+            justify-content: center;
+            gap: 1.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .secondary-unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .secondary-number {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(1.7rem, 6vw, 2.2rem);
+            font-weight: 600;
+            line-height: 1;
+            color: #6A4035;
+            opacity: 0.75;
+        }
+
+        .secondary-label {
+            font-size: 0.58rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #B0887A;
+            font-weight: 400;
+        }
+
+        .secondary-date {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 0.95rem;
+            font-style: italic;
+            font-weight: 300;
+            color: #B0887A;
+        }
+
+        /* ── Footer ── */
+        .closing {
+            margin-top: 2rem;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-style: italic;
+            font-size: 1rem;
+            font-weight: 300;
+            color: #B0887A;
+        }
+
+        /* ── Arrived state ── */
+        .arrived-msg {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(1.6rem, 7vw, 2.2rem);
+            font-weight: 300;
+            font-style: italic;
+            color: #B5727A;
+            padding: 1.5rem 0;
+            line-height: 1.4;
+        }
+
+        /* ── Previous Adventures ── */
+        .adventures-section {
+            margin-top: 2.5rem;
+        }
+
+        .adventures-label {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.65rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #B0887A;
+            margin-bottom: 1rem;
+        }
+
+        .adventures-label::before,
+        .adventures-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(180, 110, 100, 0.2);
+        }
+
+        .adventure-item {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 0.95rem;
+            font-weight: 300;
+            font-style: italic;
+            color: #9A7060;
+            padding: 0.3rem 0;
+        }
+
+        /* ── iPad layout ── */
+        @media (min-width: 768px) {
+            .primary-card {
+                padding: 3rem 3rem 2.4rem;
+            }
+
+            .countdown-row {
+                gap: 0.8rem;
+            }
+
+            .secondary-row {
+                gap: 2.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <div class="header">
+            <p class="eyebrow">counting down</p>
+            <h1 class="headline">Until we're<br><em>together</em></h1>
+            <p class="subline">Every day apart is a day closer to you.</p>
+        </div>
+
+        <div class="primary-card" id="primary-card">
+            <p class="card-eyebrow" id="primary-eyebrow">Next time together</p>
+            <div class="countdown-row">
+                <div class="unit">
+                    <span class="number" id="days">--</span>
+                    <span class="unit-label">Days</span>
+                </div>
+                <div class="unit">
+                    <span class="number" id="hours">--</span>
+                    <span class="unit-label">Hours</span>
+                </div>
+                <div class="unit">
+                    <span class="number" id="mins">--</span>
+                    <span class="unit-label">Mins</span>
+                </div>
+                <div class="unit">
+                    <span class="number" id="secs">--</span>
+                    <span class="unit-label">Secs</span>
+                </div>
+            </div>
+            <div class="dividers">
+                <div class="unit-divider"></div>
+                <div class="unit-divider"></div>
+                <div class="unit-divider"></div>
+                <div class="unit-divider"></div>
+            </div>
+            <p class="date-label" id="primary-date"></p>
+        </div>
+
+        <div id="secondary-section" style="display:none;">
+            <p class="and-then">and then&hellip;</p>
+            <div class="secondary-card">
+                <div class="secondary-row">
+                    <div class="secondary-unit">
+                        <span class="secondary-number" id="s-days">--</span>
+                        <span class="secondary-label">Days</span>
+                    </div>
+                    <div class="secondary-unit">
+                        <span class="secondary-number" id="s-hours">--</span>
+                        <span class="secondary-label">Hours</span>
+                    </div>
+                    <div class="secondary-unit">
+                        <span class="secondary-number" id="s-mins">--</span>
+                        <span class="secondary-label">Mins</span>
+                    </div>
+                </div>
+                <p class="secondary-date" id="secondary-date"></p>
+            </div>
+        </div>
+
+        <p class="closing">The best things are worth waiting for.</p>
+
+        <div class="adventures-section" id="adventures-section" style="display:none;">
+            <div class="adventures-label">Previous Adventures</div>
+            <div id="adventure-list"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const ADVENTURES = [
+            { start: new Date('2026-04-30T00:00:00'), end: new Date('2026-05-06T23:59:59') },
+            { start: new Date('2026-07-07T00:00:00'), end: new Date('2026-07-12T23:59:59') },
+            { start: new Date('2026-09-25T00:00:00'), end: new Date('2026-10-06T23:59:59') },
+        ];
+
+        function pad(n) { return String(n).padStart(2, '0'); }
+
+        function fmtShort(d) {
+            return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+        }
+
+        function fmtFull(d) {
+            return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function breakdown(ms) {
+            return {
+                days:  Math.floor(ms / 86400000),
+                hours: Math.floor((ms % 86400000) / 3600000),
+                mins:  Math.floor((ms % 3600000) / 60000),
+                secs:  Math.floor((ms % 60000) / 1000),
+            };
+        }
+
+        function renderPreviousAdventures() {
+            const now = Date.now();
+            const past = ADVENTURES.filter(a => a.end.getTime() < now);
+            const list = document.getElementById('adventure-list');
+            list.innerHTML = '';
+            past.forEach(a => {
+                const item = document.createElement('p');
+                item.className = 'adventure-item';
+                item.textContent = fmtShort(a.start) + ' — ' + fmtFull(a.end);
+                list.appendChild(item);
+            });
+            document.getElementById('adventures-section').style.display = past.length > 0 ? 'block' : 'none';
+        }
+
+        function tick() {
+            const now = Date.now();
+            const active   = ADVENTURES.find(a => a.start.getTime() <= now && a.end.getTime() >= now);
+            const upcoming = ADVENTURES.filter(a => a.start.getTime() > now);
+
+            if (active) {
+                document.getElementById('primary-card').innerHTML =
+                    '<p class="arrived-msg">You\'re together right now.<br>Enjoy every second.</p>';
+                document.getElementById('secondary-section').style.display = 'none';
+                renderPreviousAdventures();
+                return;
+            }
+
+            if (upcoming.length === 0) {
+                document.getElementById('primary-card').innerHTML =
+                    '<p class="arrived-msg">What an adventure.<br>Until the next one.</p>';
+                document.getElementById('secondary-section').style.display = 'none';
+                renderPreviousAdventures();
+                return;
+            }
+
+            const primary   = upcoming[0];
+            const secondary = upcoming[1] || null;
+
+            const p = breakdown(primary.start.getTime() - now);
+            document.getElementById('days').textContent  = pad(p.days);
+            document.getElementById('hours').textContent = pad(p.hours);
+            document.getElementById('mins').textContent  = pad(p.mins);
+            document.getElementById('secs').textContent  = pad(p.secs);
+            document.getElementById('primary-date').textContent = fmtFull(primary.start);
+
+            if (secondary) {
+                const s = breakdown(secondary.start.getTime() - now);
+                document.getElementById('s-days').textContent  = pad(s.days);
+                document.getElementById('s-hours').textContent = pad(s.hours);
+                document.getElementById('s-mins').textContent  = pad(s.mins);
+                document.getElementById('secondary-date').textContent = fmtFull(secondary.start);
+                document.getElementById('secondary-section').style.display = 'block';
+            } else {
+                document.getElementById('secondary-section').style.display = 'none';
+            }
+
+            renderPreviousAdventures();
+        }
+
+        tick();
+        setInterval(tick, 1000);
+    </script>
+</body>
+
+</html>

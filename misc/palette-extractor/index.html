@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinematic Palette Extractor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:            #0c0c0a;
+            --surface:       #131311;
+            --surface2:      #1c1c19;
+            --border:        rgba(255,255,255,0.06);
+            --border-mid:    rgba(255,255,255,0.10);
+            --text:          #ede9e0;
+            --muted:         #6b6860;
+            --muted2:        #3e3c38;
+            --accent:        #c9a96e;
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', system-ui, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── States ── */
+        .state { display: none; }
+        .state.active { display: flex; }
+
+        /* ── Toast ── */
+        #toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(6px);
+            background: var(--text);
+            color: var(--bg);
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 0.45rem 1rem;
+            border-radius: 100px;
+            opacity: 0;
+            transition: opacity 0.18s, transform 0.18s;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 999;
+            letter-spacing: 0.02em;
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ─────────────────────────────
+           LANDING
+        ───────────────────────────── */
+        #state-landing {
+            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            gap: 2.2rem;
+        }
+
+        .landing-header h1 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(2.2rem, 6vw, 4rem);
+            font-weight: 300;
+            letter-spacing: 0.01em;
+            color: var(--text);
+            line-height: 1.1;
+            margin-bottom: 0.65rem;
+        }
+
+        .landing-header p {
+            font-size: 0.88rem;
+            color: var(--muted);
+            font-weight: 300;
+            letter-spacing: 0.03em;
+            max-width: 360px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        #dropzone {
+            width: 100%;
+            max-width: 480px;
+            border: 1px dashed var(--border-mid);
+            border-radius: 20px;
+            padding: 3.2rem 2rem;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            position: relative;
+        }
+
+        #dropzone:hover,
+        #dropzone.drag-over {
+            border-color: rgba(201,169,110,0.55);
+            background: rgba(201,169,110,0.03);
+        }
+
+        #dropzone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .dz-icon {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 1.3rem;
+            opacity: 0.3;
+            display: block;
+        }
+
+        .dz-primary {
+            font-size: 0.95rem;
+            color: var(--text);
+            margin-bottom: 0.3rem;
+        }
+
+        .dz-secondary {
+            font-size: 0.78rem;
+            color: var(--muted);
+            font-weight: 300;
+        }
+
+        .landing-hint {
+            font-size: 0.68rem;
+            color: var(--muted2);
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+        }
+
+        /* ─────────────────────────────
+           PROCESSING
+        ───────────────────────────── */
+        #state-processing {
+            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.4rem;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 1.5px solid var(--border-mid);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #state-processing p {
+            font-size: 0.72rem;
+            color: var(--muted);
+            font-weight: 300;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        /* ─────────────────────────────
+           RESULTS
+        ───────────────────────────── */
+        #state-results {
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        @media (min-width: 900px) {
+            #state-results { flex-direction: row; height: 100vh; overflow: hidden; }
+        }
+
+        /* Left: image */
+        .img-panel {
+            position: relative;
+            flex: 1.15;
+            min-height: 46vh;
+            background: #000;
+            overflow: hidden;
+        }
+        @media (min-width: 900px) { .img-panel { min-height: 100vh; } }
+
+        .img-panel img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Gradient fade into right panel on desktop */
+        .img-edge {
+            display: none;
+            position: absolute;
+            top: 0; right: 0; bottom: 0;
+            width: 80px;
+            background: linear-gradient(to right, transparent, var(--bg));
+            pointer-events: none;
+        }
+        @media (min-width: 900px) { .img-edge { display: block; } }
+
+        .btn-new {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(12,12,10,0.65);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-mid);
+            color: var(--muted);
+            font-size: 0.73rem;
+            font-weight: 400;
+            font-family: 'DM Sans', sans-serif;
+            padding: 0.38rem 0.75rem;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        .btn-new:hover { color: var(--text); }
+
+        /* Right: palette panel */
+        .palette-panel {
+            width: 100%;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        @media (min-width: 900px) {
+            .palette-panel { width: 320px; flex-shrink: 0; }
+        }
+
+        /* Swatch strip */
+        .swatch-strip {
+            display: flex;
+            height: 130px;
+            flex-shrink: 0;
+        }
+        @media (min-width: 900px) { .swatch-strip { height: 200px; } }
+
+        .swatch-band {
+            flex: var(--w);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: flex 0.25s ease;
+        }
+        .swatch-band:hover { flex: calc(var(--w) * 1.6); }
+
+        .swatch-hex-label {
+            position: absolute;
+            bottom: 0.55rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.58rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.14s;
+            pointer-events: none;
+        }
+        .swatch-band:hover .swatch-hex-label { opacity: 1; }
+
+        /* Divider */
+        .panel-divider { height: 1px; background: var(--border); flex-shrink: 0; }
+
+        /* Color rows */
+        .color-list {
+            padding: 1rem 1.1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .color-row {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.45rem 0.5rem;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+        .color-row:hover { background: var(--surface2); }
+
+        .color-dot {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .color-hex {
+            font-size: 0.78rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            font-variant-numeric: tabular-nums;
+            color: var(--text);
+        }
+
+        .color-name-label {
+            font-size: 0.65rem;
+            color: var(--muted);
+            font-weight: 300;
+        }
+
+        .copy-icon {
+            margin-left: auto;
+            opacity: 0;
+            transition: opacity 0.12s;
+            color: var(--muted);
+            flex-shrink: 0;
+        }
+        .color-row:hover .copy-icon { opacity: 1; }
+
+        /* Vibe section */
+        .vibe-section {
+            padding: 1.2rem 1.3rem 1rem;
+            flex: 1;
+        }
+
+        .panel-label {
+            font-size: 0.62rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted2);
+            margin-bottom: 0.55rem;
+        }
+
+        .vibe-name {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 2.1rem;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--accent);
+            line-height: 1.05;
+            margin-bottom: 0.55rem;
+        }
+
+        .vibe-desc {
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-weight: 300;
+            line-height: 1.65;
+        }
+
+        /* Actions */
+        .panel-actions {
+            padding: 1rem 1.1rem 1.3rem;
+        }
+
+        .btn-download {
+            width: 100%;
+            padding: 0.65rem;
+            background: transparent;
+            border: 1px solid var(--border-mid);
+            border-radius: 9px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 400;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+            letter-spacing: 0.04em;
+        }
+        .btn-download:hover {
+            color: var(--text);
+            border-color: rgba(201,169,110,0.4);
+            background: rgba(201,169,110,0.03);
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ── LANDING ── -->
+<div id="state-landing" class="state active">
+    <div class="landing-header">
+        <h1>Cinematic Palette<br>Extractor</h1>
+        <p>Reveal the colour soul of your travel photographs.</p>
+    </div>
+
+    <div id="dropzone">
+        <input type="file" id="fileInput" accept="image/*">
+        <svg class="dz-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="11" width="36" height="26" rx="4"/>
+            <circle cx="22" cy="24" r="7"/>
+            <path d="M16 11l2.5-4h7l2.5 4"/>
+            <circle cx="35" cy="17" r="1.5" fill="currentColor" stroke="none"/>
+        </svg>
+        <p class="dz-primary">Drop a photograph here</p>
+        <p class="dz-secondary">or click to browse</p>
+    </div>
+
+    <p class="landing-hint">JPG &middot; PNG &middot; WebP &middot; Runs entirely in your browser</p>
+</div>
+
+<!-- ── PROCESSING ── -->
+<div id="state-processing" class="state">
+    <div class="spinner"></div>
+    <p>Extracting palette</p>
+</div>
+
+<!-- ── RESULTS ── -->
+<div id="state-results" class="state">
+    <div class="img-panel">
+        <img id="result-img" alt="">
+        <div class="img-edge"></div>
+        <button class="btn-new" onclick="resetToLanding()">
+            <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                <path d="M6 1.5L2.5 4.5 6 7.5"/>
+            </svg>
+            New image
+        </button>
+    </div>
+
+    <div class="palette-panel">
+        <div class="swatch-strip" id="swatch-strip"></div>
+        <div class="panel-divider"></div>
+        <div class="color-list" id="color-list"></div>
+        <div class="panel-divider"></div>
+        <div class="vibe-section">
+            <p class="panel-label">Vibe</p>
+            <p class="vibe-name" id="vibe-name"></p>
+            <p class="vibe-desc" id="vibe-desc"></p>
+        </div>
+        <div class="panel-divider"></div>
+        <div class="panel-actions">
+            <button class="btn-download" id="btn-download">Download palette card</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────
+//  STATE
+// ──────────────────────────────────────────────────────────
+function showState(id) {
+    document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function resetToLanding() {
+    const img = document.getElementById('result-img');
+    if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    img.src = '';
+    document.getElementById('fileInput').value = '';
+    showState('state-landing');
+}
+
+// ──────────────────────────────────────────────────────────
+//  FILE INPUT  (click + drag-and-drop)
+// ──────────────────────────────────────────────────────────
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+
+fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', ()  => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) handleFile(f);
+});
+
+function handleFile(file) {
+    showState('state-processing');
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+        document.getElementById('result-img').src = url;
+
+        // Downsample to ≤180px on each side for fast analysis
+        const MAX   = 180;
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+        const oc    = Object.assign(document.createElement('canvas'), {
+            width:  Math.round(img.width  * scale),
+            height: Math.round(img.height * scale),
+        });
+        oc.getContext('2d').drawImage(img, 0, 0, oc.width, oc.height);
+
+        const raw = oc.getContext('2d').getImageData(0, 0, oc.width, oc.height).data;
+        const pixels = [];
+        for (let i = 0; i < raw.length; i += 4) {
+            if (raw[i + 3] > 128) pixels.push([raw[i], raw[i+1], raw[i+2]]);
+        }
+
+        // Defer k-means by one tick so the spinner renders
+        setTimeout(() => {
+            const { colors, weights } = kmeans(pixels, 6, 25);
+
+            const sorted = colors
+                .map((c, i) => ({ c, w: weights[i] }))
+                .sort((a, b) => b.w - a.w);
+
+            renderResults(sorted.map(s => s.c), sorted.map(s => s.w));
+            showState('state-results');
+        }, 30);
+    };
+
+    img.onerror = () => { showState('state-landing'); toast('Could not load image.'); };
+    img.src = url;
+}
+
+// ──────────────────────────────────────────────────────────
+//  K-MEANS  (with spread initialisation)
+// ──────────────────────────────────────────────────────────
+function dist2(a, b) {
+    const dr = a[0]-b[0], dg = a[1]-b[1], db = a[2]-b[2];
+    return dr*dr + dg*dg + db*db;
+}
+
+function initCentroids(pixels, k) {
+    const cs = [[...pixels[Math.floor(Math.random() * pixels.length)]]];
+    for (let i = 1; i < k; i++) {
+        // Sample 600 candidates, pick the one farthest from existing centroids
+        let best = null, bestD = -1;
+        const n = Math.min(600, pixels.length);
+        for (let j = 0; j < n; j++) {
+            const p    = pixels[Math.floor(Math.random() * pixels.length)];
+            const minD = Math.min(...cs.map(c => dist2(p, c)));
+            if (minD > bestD) { bestD = minD; best = p; }
+        }
+        cs.push([...best]);
+    }
+    return cs;
+}
+
+function kmeans(pixels, k, iters) {
+    let centroids   = initCentroids(pixels, k);
+    const assigned  = new Int32Array(pixels.length);
+
+    for (let iter = 0; iter < iters; iter++) {
+        let changed = false;
+
+        for (let i = 0; i < pixels.length; i++) {
+            let best = 0, bestD = Infinity;
+            for (let j = 0; j < k; j++) {
+                const d = dist2(pixels[i], centroids[j]);
+                if (d < bestD) { bestD = d; best = j; }
+            }
+            if (assigned[i] !== best) { assigned[i] = best; changed = true; }
+        }
+
+        if (!changed && iter > 0) break;
+
+        const sums   = Array.from({length: k}, () => [0, 0, 0]);
+        const counts = new Int32Array(k);
+        for (let i = 0; i < pixels.length; i++) {
+            const j = assigned[i];
+            sums[j][0] += pixels[i][0];
+            sums[j][1] += pixels[i][1];
+            sums[j][2] += pixels[i][2];
+            counts[j]++;
+        }
+        for (let j = 0; j < k; j++) {
+            if (counts[j] > 0)
+                centroids[j] = sums[j].map(v => Math.round(v / counts[j]));
+        }
+    }
+
+    const finalCounts = new Int32Array(k);
+    for (const a of assigned) finalCounts[a]++;
+
+    return {
+        colors:  centroids,
+        weights: Array.from(finalCounts).map(c => c / pixels.length),
+    };
+}
+
+// ──────────────────────────────────────────────────────────
+//  COLOUR UTILITIES
+// ──────────────────────────────────────────────────────────
+function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+    if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+            case g: h = ((b - r) / d + 2) / 6; break;
+            case b: h = ((r - g) / d + 4) / 6; break;
+        }
+    }
+    return [h * 360, s, l];
+}
+
+function toHex([r, g, b]) {
+    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0').toUpperCase()).join('');
+}
+
+function contrast([r, g, b]) {
+    const lum = 0.2126*(r/255) + 0.7152*(g/255) + 0.0722*(b/255);
+    return lum > 0.44 ? '#111' : '#fff';
+}
+
+const HUE_NAMES = [
+    [0,'Red'],[15,'Coral'],[35,'Amber'],[55,'Gold'],[75,'Lime'],
+    [105,'Forest'],[148,'Sage'],[168,'Teal'],[192,'Azure'],
+    [225,'Cobalt'],[260,'Indigo'],[285,'Violet'],[318,'Rose'],
+    [345,'Crimson'],[360,'Red'],
+];
+
+function colorName([r, g, b]) {
+    const [h, s, l] = rgbToHsl(r, g, b);
+    if (l < 0.10) return 'Near Black';
+    if (l > 0.93) return 'Near White';
+    if (s < 0.09) return l < 0.32 ? 'Charcoal' : l < 0.62 ? 'Stone' : 'Silver';
+    let name = 'Red';
+    for (let i = 0; i < HUE_NAMES.length - 1; i++) {
+        if (h >= HUE_NAMES[i][0] && h < HUE_NAMES[i+1][0]) { name = HUE_NAMES[i][1]; break; }
+    }
+    if (l < 0.22)          return `Deep ${name}`;
+    if (l > 0.76 || s < 0.20) return `Pale ${name}`;
+    return name;
+}
+
+// ──────────────────────────────────────────────────────────
+//  VIBE ANALYSIS
+// ──────────────────────────────────────────────────────────
+const VIBES = {
+    'High-Key':    'Bright and airy with a clean, open feel. Light floods the frame and lifts every tone.',
+    'Moody':       'Dark and dramatic. Deep shadows dominate — a scene that holds its breath.',
+    'Atmospheric': 'Desaturated and hazy. The visual language of cinematic distance and quiet drama.',
+    'Golden Hour': 'Warm, luminous tones suffused with late-day nostalgia and amber light.',
+    'Vivid':       'Bold, saturated colours with immediate presence — nature in full voice.',
+    'Nordic':      'Cool, restrained and minimal. The quiet authority of northern light.',
+    'Balanced':    'Natural tones in easy harmony. A scene photographed exactly as it breathes.',
+};
+
+function analyzeVibe(palette, weights) {
+    const totalW = weights.reduce((a, b) => a + b, 0);
+    let sumL = 0, sumS = 0, sumWarm = 0;
+
+    palette.forEach((rgb, i) => {
+        const w = weights[i] / totalW;
+        const [h, s, l] = rgbToHsl(...rgb);
+        sumL    += l * w;
+        sumS    += s * w;
+        sumWarm += ((h <= 70 || h >= 340) ? 1 : 0) * w;
+    });
+
+    if (sumL > 0.70 && sumS < 0.28)          return 'High-Key';
+    if (sumL < 0.22)                          return 'Moody';
+    if (sumS < 0.17 && sumL > 0.28)          return 'Atmospheric';
+    if (sumWarm > 0.60 && sumL > 0.38)       return 'Golden Hour';
+    if (sumS > 0.52)                          return 'Vivid';
+    if (sumWarm < 0.32 && sumS < 0.42)       return 'Nordic';
+    return 'Balanced';
+}
+
+// ──────────────────────────────────────────────────────────
+//  RENDER
+// ──────────────────────────────────────────────────────────
+let _palette = null, _weights = null, _vibe = null;
+
+function renderResults(palette, weights) {
+    _palette = palette; _weights = weights;
+    _vibe = analyzeVibe(palette, weights);
+
+    // Swatch strip
+    const strip = document.getElementById('swatch-strip');
+    strip.innerHTML = '';
+    palette.forEach((rgb, i) => {
+        const hex  = toHex(rgb);
+        const band = document.createElement('div');
+        band.className = 'swatch-band';
+        band.style.cssText = `--w: ${weights[i] * 100}; background: ${hex};`;
+        band.onclick = () => copyText(hex);
+        const label = document.createElement('span');
+        label.className = 'swatch-hex-label';
+        label.style.color = contrast(rgb);
+        label.textContent = hex;
+        band.appendChild(label);
+        strip.appendChild(band);
+    });
+
+    // Color list
+    const list = document.getElementById('color-list');
+    list.innerHTML = '';
+    palette.forEach(rgb => {
+        const hex  = toHex(rgb);
+        const name = colorName(rgb);
+        const row  = document.createElement('div');
+        row.className = 'color-row';
+        row.onclick   = () => copyText(hex);
+        row.innerHTML = `
+            <div class="color-dot" style="background:${hex};"></div>
+            <div style="flex:1; min-width:0;">
+                <div class="color-hex">${hex}</div>
+                <div class="color-name-label">${name}</div>
+            </div>
+            <svg class="copy-icon" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+                <rect x="4" y="4" width="7.5" height="7.5" rx="1.5"/>
+                <path d="M1.5 9V2.5A1 1 0 0 1 2.5 1.5H9"/>
+            </svg>`;
+        list.appendChild(row);
+    });
+
+    // Vibe
+    document.getElementById('vibe-name').textContent = _vibe;
+    document.getElementById('vibe-desc').textContent = VIBES[_vibe];
+
+    // Download
+    document.getElementById('btn-download').onclick = () => downloadCard();
+}
+
+// ──────────────────────────────────────────────────────────
+//  PALETTE CARD DOWNLOAD
+// ──────────────────────────────────────────────────────────
+function downloadCard() {
+    const W = 1400, H = 680, BAND_H = 440;
+    const canvas = Object.assign(document.createElement('canvas'), { width: W, height: H });
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    ctx.fillStyle = '#0c0c0a';
+    ctx.fillRect(0, 0, W, H);
+
+    // Colour bands
+    const totalW = _weights.reduce((a, b) => a + b, 0);
+    let x = 0;
+    _palette.forEach((rgb, i) => {
+        const bw = (i === _palette.length - 1) ? W - x : Math.round((_weights[i] / totalW) * W);
+        ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        ctx.fillRect(x, 0, bw, BAND_H);
+
+        // Hex label on band
+        const hex = toHex(rgb);
+        ctx.save();
+        ctx.font = '500 17px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = contrast(rgb);
+        ctx.globalAlpha = 0.72;
+        ctx.fillText(hex, x + bw / 2, BAND_H - 22);
+        ctx.restore();
+
+        x += bw;
+    });
+
+    // Vibe text
+    const infoY = BAND_H + 44;
+    ctx.textAlign = 'left';
+    ctx.font = '300 italic 54px Georgia, serif';
+    ctx.fillStyle = '#c9a96e';
+    ctx.fillText(_vibe, 60, infoY + 54);
+
+    ctx.font = '300 19px system-ui, sans-serif';
+    ctx.fillStyle = '#6b6860';
+    ctx.fillText(VIBES[_vibe], 60, infoY + 94);
+
+    // Credit
+    ctx.textAlign = 'right';
+    ctx.font = '400 14px system-ui, sans-serif';
+    ctx.fillStyle = '#2e2d2a';
+    ctx.fillText('jamiemctaggart.com', W - 50, H - 24);
+
+    canvas.toBlob(blob => {
+        const a = Object.assign(document.createElement('a'), {
+            download: 'cinematic-palette.png',
+            href: URL.createObjectURL(blob),
+        });
+        a.click();
+        URL.revokeObjectURL(a.href);
+    });
+}
+
+// ──────────────────────────────────────────────────────────
+//  UTILITIES
+// ──────────────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+async function copyText(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch {
+        const el = Object.assign(document.createElement('textarea'), { value: text });
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        el.remove();
+    }
+    toast(`Copied ${text}`);
+}
+</script>
+</body>
+</html>

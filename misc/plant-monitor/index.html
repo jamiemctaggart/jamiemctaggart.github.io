@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <style>
+        html { color-scheme: dark; }
+        body { background: #060a12; font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+
+        /* Bento grid — tablet (2-col) */
+        @media (min-width: 640px) {
+            .bento { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
+            .card-hero     { grid-column: span 2; }
+            .card-moisture { grid-column: span 2; }
+            .card-sun      { grid-column: span 2; }
+        }
+
+        /* Bento grid — desktop (4-col bento) */
+        @media (min-width: 1024px) {
+            .bento {
+                grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: 300px 200px auto;
+                grid-template-areas:
+                    "hero hero light watered"
+                    "hero hero moisture moisture"
+                    "sun  sun  sun   sun";
+            }
+            .card-hero     { grid-area: hero; }
+            .card-light    { grid-area: light; }
+            .card-watered  { grid-area: watered; }
+            .card-moisture { grid-area: moisture; }
+            .card-sun      { grid-area: sun; }
+        }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+
+        .stat-number { font-variant-numeric: tabular-nums; }
+
+        #gauge-value { transition: stroke-dasharray 0.7s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease; }
+
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); }
+            50%       { box-shadow: 0 0 0 5px rgba(52,211,153,0); }
+        }
+        .live-dot { animation: glow-pulse 2.4s ease-in-out infinite; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 p-4 sm:p-5 lg:p-7">
+
+    <!-- HEADER -->
+    <header class="mb-5 flex items-start justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-0.5">
+                <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                </svg>
+                <h1 class="text-base font-semibold text-white tracking-tight">Plant Monitor</h1>
+            </div>
+            <p class="text-[11px] text-slate-500 pl-7 stat-number" id="last-updated">—</p>
+        </div>
+        <div class="flex items-center gap-1.5 bg-slate-800/50 border border-slate-700/50 rounded-full px-3 py-1.5">
+            <span class="live-dot w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+            <span class="text-xs text-slate-400 font-medium">Live</span>
+        </div>
+    </header>
+
+    <!-- BENTO GRID -->
+    <div class="bento flex flex-col gap-3.5">
+
+        <!-- ① HERO: Moisture -->
+        <div id="hero-card" class="card-hero rounded-2xl border border-slate-700/40 p-5 sm:p-6 flex flex-col"
+             style="background: radial-gradient(ellipse at 30% 0%, rgba(74,222,128,0.07) 0%, transparent 60%), #0d1420;">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-[11px] font-semibold tracking-widest text-slate-500 uppercase">Soil Moisture</span>
+                <span id="status-badge" class="text-[11px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider transition-colors duration-300">—</span>
+            </div>
+            <div class="flex-1 flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-10">
+                <!-- SVG Gauge -->
+                <svg viewBox="0 0 200 200" class="w-44 h-44 sm:w-52 sm:h-52 shrink-0">
+                    <defs>
+                        <filter id="gauge-glow" x="-30%" y="-30%" width="160%" height="160%">
+                            <feGaussianBlur stdDeviation="5" result="blur"/>
+                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                    </defs>
+                    <!-- Track arc (270°) -->
+                    <circle id="gauge-track" cx="100" cy="100" r="72"
+                        fill="none" stroke="#1a2540" stroke-width="14" stroke-linecap="round"
+                        stroke-dasharray="339.29 113.10"
+                        transform="rotate(135 100 100)"/>
+                    <!-- Value arc -->
+                    <circle id="gauge-value" cx="100" cy="100" r="72"
+                        fill="none" stroke="#4ade80" stroke-width="14" stroke-linecap="round"
+                        stroke-dasharray="0 452.39"
+                        transform="rotate(135 100 100)"
+                        filter="url(#gauge-glow)"/>
+                    <!-- Percentage -->
+                    <text id="gauge-pct" x="100" y="94" text-anchor="middle" dominant-baseline="middle"
+                        font-size="40" font-weight="700" fill="#4ade80"
+                        font-family="system-ui, sans-serif" letter-spacing="-1">--%</text>
+                    <text x="100" y="124" text-anchor="middle"
+                        font-size="11" fill="#475569" letter-spacing="3"
+                        font-family="system-ui, sans-serif" font-weight="600">MOISTURE</text>
+                </svg>
+
+                <!-- Status text + mini-stats -->
+                <div class="text-center sm:text-left">
+                    <p id="status-desc" class="text-slate-300 text-sm leading-relaxed max-w-[200px]">—</p>
+                    <div class="mt-5 flex items-center gap-5 justify-center sm:justify-start">
+                        <div>
+                            <p class="text-[10px] text-slate-600 uppercase tracking-widest mb-0.5">14d Low</p>
+                            <p class="text-xl font-bold stat-number text-slate-200" id="hist-low">--%</p>
+                        </div>
+                        <div class="w-px h-9 bg-slate-700/60 shrink-0"></div>
+                        <div>
+                            <p class="text-[10px] text-slate-600 uppercase tracking-widest mb-0.5">14d High</p>
+                            <p class="text-xl font-bold stat-number text-slate-200" id="hist-high">--%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ② LIGHT LEVEL -->
+        <div class="card-light rounded-2xl border border-slate-700/40 p-5 flex flex-col"
+             style="background: radial-gradient(ellipse at 80% 10%, rgba(251,191,36,0.07) 0%, transparent 55%), #0d1420;">
+            <span class="text-[11px] font-semibold tracking-widest text-slate-500 uppercase mb-auto">Light Level</span>
+            <div class="mt-4 flex flex-col">
+                <svg class="w-7 h-7 mb-3" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="4"/>
+                    <line x1="12" y1="2"     x2="12" y2="5"/>
+                    <line x1="12" y1="19"    x2="12" y2="22"/>
+                    <line x1="4.22" y1="4.22"   x2="6.34" y2="6.34"/>
+                    <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+                    <line x1="2"  y1="12"    x2="5"  y2="12"/>
+                    <line x1="19" y1="12"    x2="22" y2="12"/>
+                    <line x1="4.22" y1="19.78"  x2="6.34" y2="17.66"/>
+                    <line x1="17.66" y1="6.34"  x2="19.78" y2="4.22"/>
+                </svg>
+                <p class="text-3xl font-bold stat-number text-white leading-none" id="light-lux">—</p>
+                <p class="text-xs text-slate-600 mt-1 mb-3">lux</p>
+                <span id="light-category" class="text-[11px] font-semibold px-2.5 py-1 rounded-full self-start">—</span>
+            </div>
+        </div>
+
+        <!-- ③ LAST WATERED -->
+        <div class="card-watered rounded-2xl border border-slate-700/40 p-5 flex flex-col"
+             style="background: radial-gradient(ellipse at 80% 10%, rgba(56,189,248,0.06) 0%, transparent 55%), #0d1420;">
+            <span class="text-[11px] font-semibold tracking-widest text-slate-500 uppercase mb-auto">Last Watered</span>
+            <div class="mt-4 flex flex-col">
+                <svg class="w-6 h-7 mb-3" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2C6 9 4 13.5 4 16a8 8 0 0 0 16 0c0-2.5-2-7-8-14z"/>
+                </svg>
+                <p class="text-3xl font-bold stat-number text-white leading-none" id="watered-ago">—</p>
+                <p class="text-xs text-slate-600 mt-1 mb-3">ago</p>
+                <p class="text-[11px] text-slate-600 stat-number" id="watered-date">—</p>
+            </div>
+        </div>
+
+        <!-- ④ MOISTURE HISTORY CHART -->
+        <div class="card-moisture rounded-2xl border border-slate-700/40 p-5" style="background: #0d1420;">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-[11px] font-semibold tracking-widest text-slate-500 uppercase">14-day Moisture History</span>
+                <span class="text-[11px] text-slate-700">% soil moisture</span>
+            </div>
+            <div class="relative h-36 sm:h-40">
+                <canvas id="moistureChart"></canvas>
+            </div>
+        </div>
+
+        <!-- ⑤ SUNLIGHT CHART -->
+        <div class="card-sun rounded-2xl border border-slate-700/40 p-5" style="background: #0d1420;">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-[11px] font-semibold tracking-widest text-slate-500 uppercase">Daily Sunlight Exposure</span>
+                <span class="text-[11px] text-slate-700">hours / day</span>
+            </div>
+            <div class="relative h-36 sm:h-40">
+                <canvas id="lightChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- DEV ROADMAP -->
+    <div class="mt-4 rounded-2xl border border-slate-700/40 p-5 sm:p-6" style="background: #0d1420;">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold tracking-widest text-slate-500 uppercase">Development Roadmap</span>
+            <span class="text-[11px] text-slate-500 stat-number" id="todo-progress-label">0 / 12 complete</span>
+        </div>
+        <!-- Overall progress bar -->
+        <div class="h-0.5 bg-slate-800 rounded-full mb-5 overflow-hidden">
+            <div id="todo-progress-bar" class="h-full rounded-full transition-all duration-500"
+                 style="width: 0%; background: linear-gradient(90deg, #4ade80 0%, #38bdf8 40%, #a78bfa 70%, #f97316 100%);"></div>
+        </div>
+        <!-- Phase grid: 1-col mobile, 2-col desktop -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="phase-grid">
+            <!-- Rendered by renderTodos() -->
+        </div>
+    </div>
+
+    <script>
+    // ─────────────────────────────────────────────────────────────────
+    //  MOCK DATA  —  swap render(mockData) below with a fetch() call
+    //  when connecting to a real backend, e.g.:
+    //    fetch('/api/plant-data.json').then(r => r.json()).then(render);
+    // ─────────────────────────────────────────────────────────────────
+    const mockData = {
+        current: {
+            moisturePct: 68,           // 0–100 %
+            lightLux:    2840,         // lux
+            lastWatered: '2026-05-20T08:30:00',
+        },
+        history: [
+            // Sawtooth pattern: moisture slowly drops, spikes on watering days
+            { date: '2026-05-09', moisturePct: 45, lightHours: 5.2 },
+            { date: '2026-05-10', moisturePct: 79, lightHours: 6.8 },   // watered
+            { date: '2026-05-11', moisturePct: 72, lightHours: 4.1 },
+            { date: '2026-05-12', moisturePct: 64, lightHours: 7.3 },
+            { date: '2026-05-13', moisturePct: 56, lightHours: 8.2 },
+            { date: '2026-05-14', moisturePct: 47, lightHours: 3.5 },
+            { date: '2026-05-15', moisturePct: 82, lightHours: 6.1 },   // watered
+            { date: '2026-05-16', moisturePct: 74, lightHours: 7.8 },
+            { date: '2026-05-17', moisturePct: 66, lightHours: 5.9 },
+            { date: '2026-05-18', moisturePct: 57, lightHours: 8.4 },
+            { date: '2026-05-19', moisturePct: 49, lightHours: 6.7 },
+            { date: '2026-05-20', moisturePct: 77, lightHours: 4.2 },   // watered
+            { date: '2026-05-21', moisturePct: 70, lightHours: 7.1 },
+            { date: '2026-05-22', moisturePct: 68, lightHours: 5.8 },
+        ],
+    };
+
+    // ─────────────────────────────────────────────────────────────────
+    //  HELPERS
+    // ─────────────────────────────────────────────────────────────────
+    function getMoistureStatus(pct) {
+        if (pct >= 60) return { label: 'Thriving',    color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  glow: '74,222,128', desc: 'Your plant is well-hydrated and happy.' };
+        if (pct >= 40) return { label: 'Doing Well',  color: '#a3e635', bg: 'rgba(163,230,53,0.12)', glow: '163,230,53', desc: 'Moisture is healthy. Keep an eye on it.' };
+        if (pct >= 20) return { label: 'Needs Water', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', glow: '251,191,36', desc: 'Getting dry — water soon.' };
+                       return { label: 'Critical',    color: '#f87171', bg: 'rgba(248,113,113,0.12)',glow: '248,113,113',desc: 'Critically dry. Water immediately.' };
+    }
+
+    function getLightCategory(lux) {
+        if (lux >= 5000) return { label: 'Full Sun',        color: '#fde047', bg: 'rgba(253,224,71,0.12)' };
+        if (lux >= 2000) return { label: 'Bright Indirect', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' };
+        if (lux >= 500)  return { label: 'Partial Shade',   color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' };
+                         return { label: 'Low Light',        color: '#64748b', bg: 'rgba(100,116,139,0.1)' };
+    }
+
+    function fmtDayMonth(dateStr) {
+        return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    //  RENDER FUNCTIONS  (all read strictly from the `data` argument)
+    // ─────────────────────────────────────────────────────────────────
+    function renderHero(data) {
+        const pct    = data.current.moisturePct;
+        const status = getMoistureStatus(pct);
+        const hist   = data.history.map(d => d.moisturePct);
+
+        // Gauge geometry (r=72, 270° arc)
+        const circ   = 2 * Math.PI * 72;   // 452.39
+        const arcLen = circ * 0.75;        // 339.29  (270° of full circle)
+        const valArc = arcLen * (pct / 100);
+
+        document.getElementById('gauge-value').setAttribute(
+            'stroke-dasharray', `${valArc.toFixed(2)} ${(circ - valArc).toFixed(2)}`
+        );
+        document.getElementById('gauge-value').setAttribute('stroke', status.color);
+        document.getElementById('gauge-pct').textContent = `${pct}%`;
+        document.getElementById('gauge-pct').setAttribute('fill', status.color);
+
+        const badge = document.getElementById('status-badge');
+        badge.textContent        = status.label;
+        badge.style.color        = status.color;
+        badge.style.background   = status.bg;
+
+        document.getElementById('status-desc').textContent = status.desc;
+        document.getElementById('hist-low').textContent    = `${Math.min(...hist)}%`;
+        document.getElementById('hist-high').textContent   = `${Math.max(...hist)}%`;
+
+        document.getElementById('hero-card').style.background =
+            `radial-gradient(ellipse at 30% 0%, rgba(${status.glow},0.08) 0%, transparent 60%), #0d1420`;
+    }
+
+    function renderStats(data) {
+        const { lightLux, lastWatered } = data.current;
+
+        // Light
+        const lcat = getLightCategory(lightLux);
+        document.getElementById('light-lux').textContent = lightLux.toLocaleString();
+        const catEl = document.getElementById('light-category');
+        catEl.textContent      = lcat.label;
+        catEl.style.color      = lcat.color;
+        catEl.style.background = lcat.bg;
+
+        // Last watered
+        const wateredAt = new Date(lastWatered);
+        const now       = new Date();
+        const diffMs    = now - wateredAt;
+        const days      = Math.floor(diffMs / 86400000);
+        const hours     = Math.floor((diffMs % 86400000) / 3600000);
+
+        document.getElementById('watered-ago').textContent =
+            days > 0 ? `${days}d ${hours}h` : `${hours}h`;
+
+        document.getElementById('watered-date').textContent =
+            wateredAt.toLocaleDateString('en-GB', {
+                day: 'numeric', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+            });
+
+        document.getElementById('last-updated').textContent =
+            `Updated ${now.toLocaleTimeString()}`;
+    }
+
+    function renderMoistureChart(data) {
+        const labels = data.history.map(d => fmtDayMonth(d.date));
+        const values = data.history.map(d => d.moisturePct);
+
+        const ctx  = document.getElementById('moistureChart').getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, 280);
+        grad.addColorStop(0,    'rgba(74, 222, 128, 0.28)');
+        grad.addColorStop(0.65, 'rgba(74, 222, 128, 0.04)');
+        grad.addColorStop(1,    'rgba(74, 222, 128, 0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    data:               values,
+                    borderColor:        '#4ade80',
+                    backgroundColor:    grad,
+                    borderWidth:        2,
+                    pointBackgroundColor: '#4ade80',
+                    pointBorderColor:   '#0d1420',
+                    pointBorderWidth:   2,
+                    pointRadius:        3.5,
+                    pointHoverRadius:   6,
+                    tension:            0.35,
+                    fill:               true,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#131e30',
+                        titleColor:      '#64748b',
+                        bodyColor:       '#e2e8f0',
+                        borderColor:     'rgba(255,255,255,0.07)',
+                        borderWidth:     1,
+                        padding:         10,
+                        callbacks: { label: c => ` ${c.parsed.y}% moisture` },
+                    },
+                },
+                scales: {
+                    x: {
+                        grid:   { color: 'rgba(255,255,255,0.03)', drawTicks: false },
+                        ticks:  { color: '#475569', font: { size: 10 }, maxRotation: 0, padding: 6 },
+                        border: { display: false },
+                    },
+                    y: {
+                        grid:         { color: 'rgba(255,255,255,0.03)', drawTicks: false },
+                        ticks:        { color: '#475569', font: { size: 10 }, callback: v => v + '%', padding: 6 },
+                        border:       { display: false },
+                        min: 0, max: 100,
+                        suggestedMin: 20,
+                    },
+                },
+            },
+        });
+    }
+
+    function renderLightChart(data) {
+        const labels = data.history.map(d => fmtDayMonth(d.date));
+        const values = data.history.map(d => d.lightHours);
+
+        const ctx = document.getElementById('lightChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    data:                  values,
+                    backgroundColor:       'rgba(251, 191, 36, 0.5)',
+                    hoverBackgroundColor:  'rgba(251, 191, 36, 0.8)',
+                    borderRadius:          5,
+                    borderSkipped:         false,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#131e30',
+                        titleColor:      '#64748b',
+                        bodyColor:       '#e2e8f0',
+                        borderColor:     'rgba(255,255,255,0.07)',
+                        borderWidth:     1,
+                        padding:         10,
+                        callbacks: { label: c => ` ${c.parsed.y}h sunlight` },
+                    },
+                },
+                scales: {
+                    x: {
+                        grid:   { display: false, drawTicks: false },
+                        ticks:  { color: '#475569', font: { size: 10 }, maxRotation: 0, padding: 6 },
+                        border: { display: false },
+                    },
+                    y: {
+                        grid:     { color: 'rgba(255,255,255,0.03)', drawTicks: false },
+                        ticks:    { color: '#475569', font: { size: 10 }, callback: v => v + 'h', stepSize: 3, padding: 6 },
+                        border:   { display: false },
+                        min: 0, max: 12,
+                    },
+                },
+            },
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    //  DEV ROADMAP  —  checked state persisted in localStorage
+    // ─────────────────────────────────────────────────────────────────
+    const PHASES = [
+        {
+            id: 1, color: '#4ade80', title: 'The Hardware & Muscle',
+            items: [
+                { id: 'p1-0', title: 'Wire the Pump & Relay',
+                  desc: 'Connect the water pump to the 5V relay and an external power supply. Trigger the GPIO pin via Python to confirm you can turn the pump on and off without crashing the Pi.' },
+                { id: 'p1-1', title: 'Calibrate the Moisture Sensor',
+                  desc: 'Wire the capacitive sensor through the ADS1115 ADC. Take a reading in dry soil (0% baseline) and a glass of water (100% baseline).' },
+                { id: 'p1-2', title: 'Write the Watering Daemon',
+                  desc: 'Write a Python cron script that checks the ADC every 30 minutes. If the value drops below your threshold, fire the relay for 3 seconds.' },
+            ],
+        },
+        {
+            id: 2, color: '#38bdf8', title: 'The Vision Pipeline',
+            items: [
+                { id: 'p2-0', title: 'Network the Basler',
+                  desc: "Connect the camera. Note: the Pi's ethernet port does not supply PoE — you will need a standard PoE injector between the camera and the Pi." },
+                { id: 'p2-1', title: 'Pypylon Scripting',
+                  desc: 'Write a Python script using pypylon to grab a frame. Hardcode exposure, gain, and white balance registers so every image is photometrically consistent.' },
+                { id: 'p2-2', title: 'OpenCV Feature Extraction',
+                  desc: 'Implement the ExG index and ROI histogram logic to extract your daily Greenness score and Light Level score.' },
+            ],
+        },
+        {
+            id: 3, color: '#a78bfa', title: 'Cloud & Dashboard',
+            items: [
+                { id: 'p3-0', title: 'Build the Payload',
+                  desc: 'Combine the moisture data, light data, and greenness score into a single JSON object.' },
+                { id: 'p3-1', title: 'Database Push',
+                  desc: 'Have the Python script push that JSON object (and upload the daily image) to a Firebase Realtime Database or Supabase instance.' },
+                { id: 'p3-2', title: 'Frontend Render',
+                  desc: 'Update the GitHub Pages dashboard to fetch live data and the image URL from your database.' },
+            ],
+        },
+        {
+            id: 4, color: '#f97316', title: 'Machine Learning', optional: true,
+            items: [
+                { id: 'p4-0', title: 'Data Collection',
+                  desc: 'Let the system run for 2-3 weeks to gather a healthy baseline image set.' },
+                { id: 'p4-1', title: 'Train the Autoencoder',
+                  desc: 'Pull the dataset to your main PC, train the PyTorch/TensorFlow autoencoder, and export it as a lightweight .tflite or ONNX model.' },
+                { id: 'p4-2', title: 'Edge Deployment',
+                  desc: 'Push the trained model back to the Pi to run inference locally once a day.' },
+            ],
+        },
+    ];
+
+    function renderTodos() {
+        const state    = JSON.parse(localStorage.getItem('plant-monitor-todos') || '{}');
+        const allItems = PHASES.flatMap(p => p.items);
+        const doneCount = allItems.filter(i => state[i.id]).length;
+
+        document.getElementById('todo-progress-label').textContent = `${doneCount} / ${allItems.length} complete`;
+        document.getElementById('todo-progress-bar').style.width   = `${(doneCount / allItems.length) * 100}%`;
+
+        document.getElementById('phase-grid').innerHTML = PHASES.map(phase => {
+            const phaseDone  = phase.items.filter(i => state[i.id]).length;
+            const phaseTotal = phase.items.length;
+            const allDone    = phaseDone === phaseTotal;
+
+            const itemsHtml = phase.items.map(item => {
+                const checked = !!state[item.id];
+                const checkInner = checked
+                    ? `<svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="#060a12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+                    : '';
+                const checkStyle = checked
+                    ? `background:${phase.color}; border-color:${phase.color};`
+                    : 'background:transparent; border-color:#2d3f5a;';
+                return `
+                <div class="flex items-start gap-2.5 p-2 -mx-2 rounded-lg cursor-pointer transition-colors hover:bg-white/[0.03]"
+                     onclick="toggleTodo('${item.id}')">
+                    <div class="mt-0.5 w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border transition-all duration-150"
+                         style="${checkStyle}">${checkInner}</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold leading-snug ${checked ? 'line-through text-slate-600' : 'text-slate-300'}">${item.title}</p>
+                        <p class="text-[11px] leading-relaxed mt-0.5 ${checked ? 'text-slate-700' : 'text-slate-600'}">${item.desc}</p>
+                    </div>
+                </div>`;
+            }).join('');
+
+            return `
+            <div class="rounded-xl border p-4 flex flex-col gap-3"
+                 style="background:#080e18; border-color: ${allDone ? phase.color + '40' : 'rgba(255,255,255,0.05)'};">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md tracking-wide"
+                          style="color:${phase.color}; background:${phase.color}1a;">
+                        Phase ${phase.id}${phase.optional ? ' — Optional' : ''}
+                    </span>
+                    <span class="text-[10px] text-slate-600 ml-auto">${phaseDone}/${phaseTotal}</span>
+                </div>
+                <p class="text-sm font-semibold text-slate-200 -mt-1">${phase.title}</p>
+                <div class="flex flex-col gap-0.5">${itemsHtml}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function toggleTodo(id) {
+        const state = JSON.parse(localStorage.getItem('plant-monitor-todos') || '{}');
+        state[id]   = !state[id];
+        localStorage.setItem('plant-monitor-todos', JSON.stringify(state));
+        renderTodos();
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    //  ENTRY POINT  —  all render functions read from `data`
+    //  Replace with: fetch('/api/plant-data.json').then(r=>r.json()).then(render)
+    // ─────────────────────────────────────────────────────────────────
+    function render(data) {
+        renderHero(data);
+        renderStats(data);
+        renderMoistureChart(data);
+        renderLightChart(data);
+        renderTodos();
+    }
+
+    render(mockData);
+    </script>
+</body>
+</html>
